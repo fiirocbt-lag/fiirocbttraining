@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FIIRO CBT Admin Panel</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="navbar">
+    <img src="logo.jpg" alt="Logo" class="logo" />
+    <h1>FIIRO CBT Admin Panel</h1>
+
+    <!-- Discreet tab linking to Candidate Page -->
+    <div class="menu-tab">
+      <a href="index.html" title="Go to Candidate Page">&#9776;</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- ADMIN LOGIN -->
+    <section id="loginBox" class="card">
+      <h2>Admin Login</h2>
+      <input type="password" id="adminPass" placeholder="Password" />
+      <input type="text" id="adminName" placeholder="Your Name" />
+      <input type="text" id="adminStaffID" placeholder="Staff ID (optional)" />
+      <button id="loginBtn">Login</button>
+      <p id="loginStatus" class="status"></p>
+    </section>
+
+    <!-- ADMIN DASHBOARD -->
+    <section id="adminPanel" class="card hidden">
+      <!-- Upload Questions Section -->
+      <h2>Upload Questions</h2>
+      <input type="file" id="uploadCSV" accept=".csv" />
+      <button id="uploadBtn">Upload Questions File</button>
+      <p id="uploadStatus"></p>
+
+      <!-- PIN Management -->
+      <h2>PIN Management</h2>
+      <input type="text" id="newPin" placeholder="Generate new PIN" readonly />
+      <button id="generatePinBtn">Generate Random PIN</button>
+      <button id="savePinBtn">Save PIN</button>
+      <ul id="pinList"></ul>
+
+      <!-- Analytics Summary -->
+      <h2>Analytics Summary</h2>
+      <p><strong>Total Candidates:</strong> <span id="totalCandidates">0</span></p>
+      <p><strong>Average Score:</strong> <span id="avgScore">0</span>%</p>
+      <p><strong>Highest Score:</strong> <span id="highScore">0</span>%</p>
+      <p><strong>Lowest Score:</strong> <span id="lowScore">0</span>%</p>
+      <p><strong>Passes:</strong> <span id="passCount">0</span></p>
+      <p><strong>Fails:</strong> <span id="failCount">0</span></p>
+
+      <!-- Integrity / Audit Log -->
+      <h2>Integrity / Audit Log</h2>
+      <button id="downloadAuditBtn">Download Admin Activity Log (CSV)</button>
+      <button id="exportBtn">Download All Results (CSV)</button>
+    </section>
+  </main>
+
+  <script src="script.js?v=16"></script>
+</body>
+</html>

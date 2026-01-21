@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FIIRO CBT System</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="header">
+  <img src="logo.jpg" class="logo" />
+  <h1>Federal Institute of Industrial Research, Oshodi (FIIRO)</h1>
+  <a href="admin.html" class="menu-icon" title="Go to Admin Login">
+    <span></span>
+    <span></span>
+    <span></span>
+  </a>
+</header>
+
+<div class="container watermark-bg">
+
+  <div id="candidateForm">
+    <h2>Welcome Candidate</h2>
+
+    <p style="color:red; font-weight:bold;">
+      This is a Computer Based Test (CBT) simulation platform powered by the ICT Division, FIIRO.
+      It is designed solely for practice and staff training.
+    </p>
+
+    <p>
+      You are about to take an exam. This exam comprises of 2 sections —
+      <b>Section A: Current Affairs</b> and <b>Section B: Public Service Rules (PSR)</b> in Nigeria.
+      You have <b>1 hour</b> to complete the entire exam. Please attempt <b>ALL</b> questions.
+    </p>
+
+    <label style="display:block; margin:10px 0;">
+      <input type="checkbox" id="agreeCheck" /> Click to agree if you have read the instructions
+    </label>
+
+    <input id="pinCode" placeholder="Enter PIN Code" />
+    <button id="startBtn" disabled>START</button>
+  </div>
+
+  <div id="quiz" class="hidden">
+    <div class="topbar">
+      <span id="progress"></span>
+      <span id="timer"></span>
+    </div>
+    <div id="question"></div>
+    <div id="options"></div>
+    <div class="nav">
+      <button id="prevBtn">Previous</button>
+      <button id="nextBtn">Next</button>
+      <button id="submitBtn" class="danger">Submit</button>
+    </div>
+  </div>
+
+  <div id="result" class="hidden">
+    <h2>Result</h2>
+    <p id="scoreText"></p>
+    <button id="restartBtn">Restart</button>
+  </div>
+
+</div>
+
+<script src="script.js?v=5"></script>
+</body>
+</html>
