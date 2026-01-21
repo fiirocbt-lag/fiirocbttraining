@@ -178,4 +178,183 @@ async function loadQuestionsFromCSV() {
     {Section:"B",Question:"Which value is NOT expected of civil servants?",A:"Honesty",B:"Impartiality",C:"Corruption",D:"Integrity",Correct:"C"}
   ];
 
-  console.log(`✅ Loaded ${builtIn
+    console.log(`✅ Loaded ${builtInQuestions.length} questions`);
+  return builtInQuestions;
+}
+
+// ======== CANDIDATE FLOW =========
+async function startTest() {
+  const pin = document.getElementById("pinCode").value.trim();
+  if (!pin) return alert("Please enter your PIN.");
+
+  const validPins = JSON.parse(localStorage.getItem("pins") || "[]");
+  if (!validPins.includes(pin)) return alert("Invalid or expired PIN.");
+
+  const questions = await loadQuestionsFromCSV();
+  if (!questions.length) return alert("No questions found.");
+
+  const sectionA = questions.filter((q) => q.Section === "A");
+  const sectionB = questions.filter((q) => q.Section === "B");
+
+  state.questions = [sectionA, sectionB];
+  state.staff = { pin };
+  state.currentSection = 0;
+  state.current = 0;
+  state.answers = {};
+  state.remaining = 60 * 60;
+
+  document.getElementById("candidateForm").classList.add("hidden");
+  document.getElementById("quiz").classList.remove("hidden");
+
+  renderQuestion();
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(state.timer);
+  state.timer = setInterval(() => {
+    state.remaining--;
+    const m = Math.floor(state.remaining / 60);
+    const s = String(state.remaining % 60).padStart(2, "0");
+    const timerEl = document.getElementById("timer");
+    if (timerEl) timerEl.textContent = `Time: ${m}:${s}`;
+    if (state.remaining <= 0) submitTest();
+  }, 1000);
+}
+
+function renderQuestion() {
+  const q = state.questions[state.currentSection][state.current];
+  if (!q) return;
+
+  document.getElementById("progress").textContent = `Section ${q.Section} — Question ${state.current + 1}`;
+  document.getElementById("question").textContent = q.Question;
+
+  const optBox = document.getElementById("options");
+  optBox.innerHTML = "";
+  ["A", "B", "C", "D"].forEach((opt) => {
+    const btn = document.createElement("button");
+    btn.textContent = `${opt}. ${q[opt]}`;
+    if (state.answers[`${state.currentSection}-${state.current}`] === opt)
+      btn.classList.add("selected");
+    btn.onclick = () => {
+      state.answers[`${state.currentSection}-${state.current}`] = opt;
+      renderQuestion();
+    };
+    optBox.appendChild(btn);
+  });
+}
+
+function nextQuestion() {
+  const total = state.questions[state.currentSection].length;
+  if (state.current < total - 1) state.current++;
+  else if (state.currentSection === 0 && confirm("End of Section A. Begin Section B?")) {
+    state.currentSection = 1;
+    state.current = 0;
+  } else if (state.currentSection === 1) submitTest();
+  renderQuestion();
+}
+
+function prevQuestion() {
+  if (state.current > 0) state.current--;
+  renderQuestion();
+}
+
+function submitTest() {
+  clearInterval(state.timer);
+  let total = 0, correct = 0;
+  state.questions.forEach((sec, s) =>
+    sec.forEach((q, i) => {
+      total++;
+      if (state.answers[`${s}-${i}`] === q.Correct) correct++;
+    })
+  );
+
+  const score = Math.round((correct / total) * 100) || 0;
+  const grade = score >= 75 ? "Excellent" : score >= 50 ? "Pass" : "Fail";
+
+  const rec = { date: new Date().toISOString(), pin: state.staff.pin, score, grade };
+  const results = store.getResults();
+  results.push(rec);
+  store.setResults(results);
+
+  document.getElementById("quiz").classList.add("hidden");
+  document.getElementById("result").classList.remove("hidden");
+  document.getElementById("scoreText").textContent = `Your score is ${score}% — ${grade}`;
+  showAnalytics();
+}
+
+// ======== EXPORT, AUDIT, AND UPLOAD =========
+function exportResults() {
+  const res = store.getResults();
+  let csv = "Date,PIN,Score,Grade\n";
+  res.forEach((r) => (csv += `${r.date},${r.pin},${r.score},${r.grade}\n`));
+  const blob = new Blob([csv]);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "FIIRO_results.csv";
+  a.click();
+}
+
+function downloadAudit() {
+  const data = store.getAudit();
+  let csv = "Time,Admin,StaffID,Role,Action,Details\n";
+  data.forEach(
+    (r) => (csv += `${r.time},${r.admin},${r.staffID},${r.role},${r.action},${r.details}\n`)
+  );
+  const blob = new Blob([csv]);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "FIIRO_admin_audit.csv";
+  a.click();
+}
+
+function handleUpload() {
+  const fileInput = document.getElementById("uploadCSV");
+  const status = document.getElementById("uploadStatus");
+  const file = fileInput.files[0];
+  if (!file) {
+    status.textContent = "Please select a .csv file first.";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const text = e.target.result;
+    if (!text || text.trim().length === 0) {
+      status.textContent = "❌ Empty file.";
+      return;
+    }
+    localStorage.setItem("uploadedQuestions", text);
+    status.textContent = "✅ Questions uploaded and saved!";
+    logAudit("UPLOAD", "Admin uploaded new questions CSV");
+  };
+  reader.readAsText(file);
+}
+
+// ======== EVENT HOOKS =========
+document.addEventListener("DOMContentLoaded", () => {
+  const agree = document.getElementById("agreeCheck");
+  const startBtn = document.getElementById("startBtn");
+  if (agree && startBtn)
+    agree.addEventListener("change", () => (startBtn.disabled = !agree.checked));
+
+  if (startBtn) {
+    startBtn.onclick = startTest;
+    document.getElementById("prevBtn").onclick = prevQuestion;
+    document.getElementById("nextBtn").onclick = nextQuestion;
+    document.getElementById("submitBtn").onclick = submitTest;
+    document.getElementById("restartBtn").onclick = () => location.reload();
+  }
+
+  if (document.getElementById("loginBtn")) {
+    document.getElementById("loginBtn").onclick = adminLogin;
+    document.getElementById("generatePinBtn").onclick = generatePIN;
+    document.getElementById("savePinBtn").onclick = savePIN;
+    document.getElementById("exportBtn").onclick = exportResults;
+    document.getElementById("downloadAuditBtn").onclick = downloadAudit;
+    document.getElementById("uploadBtn").onclick = handleUpload;
+  }
+
+  if (document.getElementById("adminPanel")) showAnalytics();
+});
+
