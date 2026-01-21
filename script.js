@@ -111,34 +111,79 @@ function showAnalytics() {
   document.getElementById("failCount").textContent = fail;
 }
 
-// ======== LOAD QUESTIONS FROM CSV (auto-fix encoding) =========
+// ======== LOAD QUESTIONS (built-in fallback) =========
 async function loadQuestionsFromCSV() {
+  // Embedded 60 questions (A + B)
+  const builtInQuestions = `
+Section,Question,A,B,C,D,Correct
+A,Who is the current President of Nigeria?,Bola Tinubu,Muhammadu Buhari,Goodluck Jonathan,Yemi Osinbajo,A
+A,In what year did Nigeria gain independence?,1956,1960,1963,1970,B
+A,What is the capital city of Nigeria?,Lagos,Abuja,Kano,Port Harcourt,B
+A,How many states are there in Nigeria?,30,32,36,37,C
+A,Who composed the Nigerian national anthem?,Ben Odiase,Wole Soyinka,Chinua Achebe,Fela Kuti,A
+A,What are the colors of the Nigerian flag?,Green and Yellow,Green and White,Red and White,Green and Blue,B
+A,Who was Nigeria's first Prime Minister?,Nnamdi Azikiwe,Abubakar Tafawa Balewa,Obafemi Awolowo,Ahmadu Bello,B
+A,When did Nigeria become a republic?,1959,1963,1966,1979,B
+A,What is Nigeria's major source of revenue?,Tourism,Agriculture,Oil,Manufacturing,C
+A,Which river is the longest in Nigeria?,River Benue,River Niger,River Ogun,River Kaduna,B
+A,Who was the first military Head of State in Nigeria?,Yakubu Gowon,Aguiyi Ironsi,Murtala Mohammed,Olusegun Obasanjo,B
+A,Which country shares the longest border with Nigeria?,Ghana,Niger Republic,Cameroon,Chad,B
+A,What is the currency of Nigeria?,Naira,Dollar,Cedi,Pound,A
+A,Which Nigerian city is known as the “Coal City”?,Ibadan,Enugu,Kaduna,Kano,B
+A,Which Nigerian state is called the “Centre of Excellence”?,Kano,Lagos,Ogun,Oyo,B
+A,What is the name of Nigeria’s upper legislative chamber?,House of Representatives,Senate,National Assembly,House of Lords,B
+A,How many geopolitical zones are in Nigeria?,4,5,6,7,C
+A,Who was the first civilian president of the Fourth Republic?,Olusegun Obasanjo,Umaru Musa Yar’Adua,Goodluck Jonathan,Muhammadu Buhari,A
+A,Which Nigerian leader was assassinated in 1976?,Aguiyi Ironsi,Murtala Mohammed,Sani Abacha,Balewa,B
+A,What year was the Nigerian civil war fought?,1965-1967,1967-1970,1971-1973,1980-1982,B
+A,What is the motto of Nigeria?,Unity and Faith,Faith, Peace and Progress,Peace, Unity and Progress,Unity and Faith, Peace and Progress,D
+A,Which Nigerian city is known for tin mining?,Jos,Kaduna,Ibadan,Kano,A
+A,Who was the first female Speaker of the House of Representatives?,Patricia Etteh,Stella Oduah,Okonjo Iweala,Dora Akunyili,A
+A,Which Nigerian organization conducts elections?,EFCC,INEC,NDLEA,NEMA,B
+A,Which Nigerian university is the oldest?,UNILAG,UI,ABU,OAU,B
+A,When was the Nigerian Naira introduced?,1959,1963,1973,1980,C
+A,Which sea lies to the south of Nigeria?,Indian Ocean,Red Sea,Atlantic Ocean,Mediterranean Sea,C
+A,Who is regarded as the father of Nigerian nationalism?,Obafemi Awolowo,Nnamdi Azikiwe,Ahmadu Bello,Herbert Macaulay,D
+A,Which Nigerian state is famous for groundnut production?,Kano,Lagos,Benue,Ebonyi,A
+A,What is the official language of Nigeria?,English,Hausa,Yoruba,Igbo,A
+B,What is the normal retirement age in the Nigerian Public Service?,55 years,60 years,65 years,70 years,B
+B,What does PSR stand for?,Public Service Regulation,Public Service Rules,Personnel Service Rules,Public Staff Regulations,B
+B,Who appoints Permanent Secretaries?,President,Head of Service,Governor,Minister,B
+B,When should an officer resume duty after leave?,At will,As scheduled,Within one month,Immediately after leave ends,D
+B,An officer who overstays leave without permission is said to have?,Absconded,Resigned,Retired,Transferred,A
+B,The Public Service is under which arm of government?,Legislature,Judiciary,Executive,Private,C
+B,What is the purpose of the Public Service Rules?,To punish workers,To guide conduct and discipline,To promote politics,To reduce pay,B
+B,What document contains duties of civil servants?,Civil Service Handbook,Public Service Rules,Code of Conduct,Staff Manual,B
+B,Which body handles staff discipline?,FCSC,Head of Service,President,Minister,A
+B,What does “Interdiction” mean in the PSR?,Temporary suspension pending investigation,Retirement,Demotion,Promotion,A
+B,Which leave is granted for health reasons?,Annual leave,Study leave,Sick leave,Compassionate leave,C
+B,How many months of maternity leave are granted?,2 months,3 months,4 months,6 months,C
+B,Promotion in the Public Service is based mainly on?,Seniority,Performance and vacancies,Connection,Training,B
+B,The normal working hours are?,6 hours,7 hours,8 hours,10 hours,C
+B,Leave of absence may be granted for?,Personal business,Study or health,Political campaign,Travel,B
+B,When may a civil servant be suspended?,When found guilty,During investigation,On vacation,After resignation,B
+B,Who signs letters of appointment?,Permanent Secretary,President,Director,Supervisor,A
+B,Retirement benefits include?,Bonus,Gratuity and Pension,Commission,Allowance,B
+B,What must an officer do before traveling abroad?,Take annual leave,Seek approval,Buy ticket,Inform friends,B
+B,What is the PSR’s stance on punctuality?,Optional,Mandatory,Not important,Only for seniors,B
+B,Which form is used for leave application?,PSR Form 1,Leave Form 3,Annual Leave Form 1,Official Letter,B
+B,How many days make a working week?,5,6,7,4,A
+B,Who maintains discipline in Ministries?,Permanent Secretary,Director,Head of Service,Minister,A
+B,What is the full meaning of FCSC?,Federal Civil Service Commission,Federal Civil Service Council,Foreign Civil Staff Commission,Financial Civil Service Commission,A
+B,What should be done to improve performance?,Reward laziness,Encourage training,Ignore feedback,Delay promotion,B
+B,Which rule regulates official correspondence?,PSR Chapter 9,PSR Chapter 3,PSR Chapter 7,PSR Chapter 5,B
+B,Transfer means?,Promotion,Change of duty station,Retirement,Suspension,B
+B,The PSR applies to?,Private workers,Public officers only,All Nigerian citizens,NGOs,B
+B,Disciplinary action begins with?,Dismissal,Warning,Query,Suspension,C
+B,Resignation requires?,Verbal notice,Written notice,No notice,Minister’s approval,B
+B,Who prepares annual performance evaluation reports?,Clerk,Immediate Supervisor,Director,Colleague,B
+B,The PSR promotes?,Indiscipline,Accountability,Corruption,Nepotism,B
+B,Which value is NOT expected of civil servants?,Honesty,Impartiality,Corruption,Integrity,C
+`;
+
   try {
-    // 1️⃣ Prefer locally uploaded CSV if available
     let text = localStorage.getItem("uploadedQuestions");
-
-    // 2️⃣ Otherwise, load hosted CSV file
-    if (!text || text.trim().length === 0) {
-      const response = await fetch("questions.csv?v=" + Date.now(), {
-        headers: { "Cache-Control": "no-cache" },
-      });
-      const buffer = await response.arrayBuffer();
-      const textDecoder = new TextDecoder("utf-8", { fatal: false });
-      text = textDecoder.decode(buffer);
-    }
-
-    // 3️⃣ Auto-repair encoding artifacts
-    text = text
-      .replace(/â€œ/g, '"')
-      .replace(/â€/g, '"')
-      .replace(/â€™/g, "'")
-      .replace(/â€“/g, "-")
-      .replace(/Â/g, "");
-
-    if (!text || text.trim().length === 0) {
-      alert("Questions file is empty or unreadable.");
-      return [];
-    }
+    if (!text || text.trim().length === 0) text = builtInQuestions;
 
     const rows = text
       .trim()
@@ -149,25 +194,23 @@ async function loadQuestionsFromCSV() {
         return parts ? parts.map((p) => p.replace(/^"|"$/g, "").trim()) : [];
       });
 
-    rows.shift(); // remove header row
-
+    rows.shift();
     const parsed = rows
       .filter((r) => r.length >= 7)
       .map((r) => ({
-        Section: r[0].trim(),
+        Section: r[0],
         Question: r[1],
         A: r[2],
         B: r[3],
         C: r[4],
         D: r[5],
-        Correct: r[6].trim().toUpperCase(),
+        Correct: r[6].toUpperCase(),
       }));
 
     console.log(`✅ Loaded ${parsed.length} questions`);
     return parsed;
   } catch (err) {
-    console.error("❌ Error loading questions.csv:", err);
-    alert("Unable to load questions file. Check console for details.");
+    console.error("❌ Error loading questions:", err);
     return [];
   }
 }
@@ -276,7 +319,7 @@ function submitTest() {
   showAnalytics();
 }
 
-// ======== EXPORT =========
+// ======== EXPORT & AUDIT =========
 function exportResults() {
   const res = store.getResults();
   let csv = "Date,PIN,Score,Grade\n";
