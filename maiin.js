@@ -4,7 +4,7 @@ import {
   getFirestore,
   doc,
   getDoc,
-  updateDoc,
+  setDoc,
   addDoc,
   collection,
   getDocs
@@ -22,24 +22,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ================= LOCAL STORAGE (RESULTS + AUDIT ONLY) =================
+// ================= LOCAL STORAGE (RESULTS ONLY) =================
 const store = {
   getResults: () => JSON.parse(localStorage.getItem("results") || "[]"),
-  setResults: (r) => localStorage.setItem("results", JSON.stringify(r)),
-  getAudit: () => JSON.parse(localStorage.getItem("audit") || "[]"),
-  setAudit: (a) => localStorage.setItem("audit", JSON.stringify(a)),
+  setResults: (r) => localStorage.setItem("results", JSON.stringify(r))
 };
 
 // ================= APP STATE =================
 let state = {
-  questions: [],
-  currentSection: 0,
-  current: 0,
-  answers: {},
   remaining: 0,
   timer: null,
   staff: null,
-  adminMeta: null,
+  adminMeta: null
 };
 
 // ================= ADMIN LOGIN =================
@@ -51,6 +45,7 @@ function adminLogin() {
   if (pass !== "admin123") return alert("Wrong password");
 
   state.adminMeta = { name };
+
   document.getElementById("loginBox").classList.add("hidden");
   document.getElementById("adminPanel").classList.remove("hidden");
 
@@ -58,24 +53,29 @@ function adminLogin() {
   showAnalytics();
 }
 
-// ================= MASTER PIN SYSTEM =================
+// ================= LOAD CURRENT PIN =================
 async function loadCurrentPin() {
   const ref = doc(db, "system", "masterCode");
   const snap = await getDoc(ref);
+
+  const list = document.getElementById("pinList");
+
+  if (!list) return;
+
   if (snap.exists()) {
-    document.getElementById("pinList").innerHTML =
-      `<li>${snap.data().activeCode}</li>`;
+    list.innerHTML = `<li>${snap.data().activeCode}</li>`;
   } else {
-    document.getElementById("pinList").innerHTML =
-      `<li>No Active PIN</li>`;
+    list.innerHTML = `<li>No Active PIN</li>`;
   }
 }
 
+// ================= GENERATE PIN =================
 function generatePIN() {
   const pin = Math.floor(100000 + Math.random() * 900000).toString();
   document.getElementById("newPin").value = pin;
 }
 
+// ================= SAVE PIN =================
 async function savePIN() {
   const pin = document.getElementById("newPin").value.trim();
   if (!pin) return alert("Generate PIN first");
@@ -83,6 +83,7 @@ async function savePIN() {
   const ref = doc(db, "system", "masterCode");
   const snap = await getDoc(ref);
 
+  // Archive old PIN
   if (snap.exists()) {
     const old = snap.data();
     await addDoc(collection(db, "codeArchive"), {
@@ -93,7 +94,8 @@ async function savePIN() {
     });
   }
 
-  await updateDoc(ref, {
+  // Create or overwrite master code
+  await setDoc(ref, {
     activeCode: pin,
     createdAt: new Date(),
     createdBy: state.adminMeta.name
@@ -105,7 +107,10 @@ async function savePIN() {
 
 // ================= CANDIDATE START =================
 async function startTest() {
-  const pin = document.getElementById("pinCode").value.trim();
+  const pinInput = document.getElementById("pinCode");
+  if (!pinInput) return;
+
+  const pin = pinInput.value.trim();
   if (!pin) return alert("Enter PIN");
 
   const ref = doc(db, "system", "masterCode");
@@ -113,14 +118,21 @@ async function startTest() {
 
   if (!snap.exists()) return alert("System error");
 
-  if (snap.data().activeCode !== pin)
-    return alert("Invalid or expired PIN.");
+  const activePin = String(snap.data().activeCode).trim();
 
+  if (activePin !== pin) {
+    return alert("Invalid or expired PIN.");
+  }
+
+  // PIN VALID
   state.staff = { pin };
   state.remaining = 60 * 60;
 
-  document.getElementById("candidateForm").classList.add("hidden");
-  document.getElementById("quiz").classList.remove("hidden");
+  const form = document.getElementById("candidateForm");
+  const quiz = document.getElementById("quiz");
+
+  if (form) form.classList.add("hidden");
+  if (quiz) quiz.classList.remove("hidden");
 
   startTimer();
 }
@@ -128,29 +140,43 @@ async function startTest() {
 // ================= TIMER =================
 function startTimer() {
   clearInterval(state.timer);
+
   state.timer = setInterval(() => {
     state.remaining--;
-    if (state.remaining <= 0) submitTest();
+
+    if (state.remaining <= 0) {
+      clearInterval(state.timer);
+      alert("Time up!");
+    }
   }, 1000);
 }
 
 // ================= ANALYTICS =================
 function showAnalytics() {
   const results = store.getResults();
-  const scores = results.map((r) => r.score);
+  const total = document.getElementById("totalCandidates");
+  const avgEl = document.getElementById("avgScore");
+
+  if (!total || !avgEl) return;
+
+  const scores = results.map(r => r.score);
   const avg = scores.length
     ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
     : 0;
 
-  document.getElementById("totalCandidates").textContent = results.length;
-  document.getElementById("avgScore").textContent = avg;
+  total.textContent = results.length;
+  avgEl.textContent = avg;
 }
 
-// ================= EXPORT =================
+// ================= EXPORT RESULTS =================
 function exportResults() {
   const res = store.getResults();
   let csv = "Date,PIN,Score,Grade\n";
-  res.forEach((r) => (csv += `${r.date},${r.pin},${r.score},${r.grade}\n`));
+
+  res.forEach(r => {
+    csv += `${r.date},${r.pin},${r.score},${r.grade}\n`;
+  });
+
   const blob = new Blob([csv]);
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -158,11 +184,12 @@ function exportResults() {
   a.click();
 }
 
+// ================= DOWNLOAD PIN ARCHIVE =================
 async function downloadArchive() {
   const snapshot = await getDocs(collection(db, "codeArchive"));
   let csv = "Code,CreatedAt,ExpiredAt,CreatedBy\n";
 
-  snapshot.forEach((docu) => {
+  snapshot.forEach(docu => {
     const d = docu.data();
     csv += `${d.code},${d.createdAt?.toDate()},${d.expiredAt?.toDate()},${d.createdBy}\n`;
   });
@@ -174,9 +201,10 @@ async function downloadArchive() {
   a.click();
 }
 
-// ================= EVENT LISTENERS =================
+// ================= EVENT BINDINGS =================
 document.addEventListener("DOMContentLoaded", () => {
 
+  // ADMIN PAGE
   if (document.getElementById("loginBtn")) {
     document.getElementById("loginBtn").onclick = adminLogin;
     document.getElementById("generatePinBtn").onclick = generatePIN;
@@ -185,6 +213,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("downloadAuditBtn").onclick = downloadArchive;
   }
 
+  // CANDIDATE PAGE
   if (document.getElementById("startBtn")) {
     document.getElementById("startBtn").onclick = startTest;
   }
