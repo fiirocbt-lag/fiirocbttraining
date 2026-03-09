@@ -43,11 +43,11 @@ let excelQuestions = [];
 // ================= SHUFFLE FUNCTION =================
 function shuffle(array){
 
-for(let i = array.length - 1; i > 0; i--){
+for(let i=array.length-1;i>0;i--){
 
-const j = Math.floor(Math.random() * (i + 1));
+const j = Math.floor(Math.random()*(i+1));
 
-[array[i], array[j]] = [array[j], array[i]];
+[array[i],array[j]] = [array[j],array[i]];
 
 }
 
@@ -88,6 +88,7 @@ const pin = Math.floor(100000 + Math.random()*900000).toString();
 document.getElementById("newPin").value = pin;
 
 }
+
 
 async function savePIN(){
 
@@ -314,7 +315,7 @@ answers[currentSection+"_"+currentQuestion] = selected.value;
 }
 
 
-// ================= NEXT QUESTION =================
+// ================= NEXT =================
 function nextQuestion(){
 
 saveAnswer();
@@ -426,7 +427,7 @@ startTimer();
 }
 
 
-// ================= CALCULATE SCORE =================
+// ================= SCORE =================
 function calculateScore(){
 
 let score = 0;
@@ -496,14 +497,16 @@ document.getElementById("failCount").innerText =
 scores.filter(s=>s<50).length;
 
 }
-// ================= DOWNLOAD ADMIN ACTIVITY =================
+
+
+// ================= DOWNLOAD ADMIN LOG =================
 async function downloadAuditLog(){
 
 const snapshot = await getDocs(collection(db,"codeArchive"));
 
 let csv = "Code,CreatedAt,ExpiredAt,CreatedBy\n";
 
-snapshot.forEach(docu => {
+snapshot.forEach(docu=>{
 
 const d = docu.data();
 
@@ -511,15 +514,18 @@ csv += `${d.code || ""},${d.createdAt || ""},${d.expiredAt || ""},${d.createdBy 
 
 });
 
-const blob = new Blob([csv], {type:"text/csv"});
+const blob = new Blob([csv],{type:"text/csv"});
 
-const a = document.createElement("a");
+const link = document.createElement("a");
 
-a.href = URL.createObjectURL(blob);
+link.href = URL.createObjectURL(blob);
+link.download = "admin_activity_log.csv";
 
-a.download = "admin_activity_log.csv";
+document.body.appendChild(link);
 
-a.click();
+link.click();
+
+document.body.removeChild(link);
 
 }
 
@@ -531,25 +537,29 @@ const snapshot = await getDocs(collection(db,"results"));
 
 let csv = "PIN,Score,Total,SubmittedAt\n";
 
-snapshot.forEach(docu => {
+snapshot.forEach(docu=>{
 
 const d = docu.data();
 
-csv += `${d.pin},${d.score},${d.total},${d.submittedAt}\n`;
+csv += `${d.pin || ""},${d.score || ""},${d.total || ""},${d.submittedAt || ""}\n`;
 
 });
 
-const blob = new Blob([csv], {type:"text/csv"});
+const blob = new Blob([csv],{type:"text/csv"});
 
-const a = document.createElement("a");
+const link = document.createElement("a");
 
-a.href = URL.createObjectURL(blob);
+link.href = URL.createObjectURL(blob);
+link.download = "cbt_results.csv";
 
-a.download = "cbt_results.csv";
+document.body.appendChild(link);
 
-a.click();
+link.click();
+
+document.body.removeChild(link);
 
 }
+
 
 // ================= EVENTS =================
 document.addEventListener("DOMContentLoaded",()=>{
@@ -568,6 +578,16 @@ document.getElementById("uploadExcelBtn").onclick = uploadExcel;
 
 }
 
+
+// DOWNLOAD BUTTONS
+const auditBtn = document.getElementById("downloadAuditBtn");
+if(auditBtn) auditBtn.onclick = downloadAuditLog;
+
+const exportBtn = document.getElementById("exportBtn");
+if(exportBtn) exportBtn.onclick = exportResults;
+
+
+// CANDIDATE PAGE
 const startBtn = document.getElementById("startBtn");
 
 if(startBtn){
@@ -575,9 +595,7 @@ if(startBtn){
 const agree = document.getElementById("agreeCheck");
 
 agree.addEventListener("change",()=>{
-
 startBtn.disabled = !agree.checked;
-
 });
 
 startBtn.onclick = startTest;
@@ -588,6 +606,8 @@ document.getElementById("submitBtn").onclick = submitExam;
 
 }
 
+
+// RESTART
 const restartBtn = document.getElementById("restartBtn");
 
 if(restartBtn){
@@ -595,15 +615,3 @@ restartBtn.onclick = ()=>location.reload();
 }
 
 });
-// DOWNLOAD BUTTONS
-const auditBtn = document.getElementById("downloadAuditBtn");
-
-if(auditBtn){
-auditBtn.onclick = downloadAuditLog;
-}
-
-const exportBtn = document.getElementById("exportBtn");
-
-if(exportBtn){
-exportBtn.onclick = exportResults;
-}
