@@ -104,12 +104,12 @@ const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
 if(cols.length < 7) continue;
 
 const section = cols[0].replace(/"/g,"").trim().toUpperCase();
-const question = cols[1].replace(/"/g,"").trim();
-const optionA = cols[2].replace(/"/g,"").trim();
-const optionB = cols[3].replace(/"/g,"").trim();
-const optionC = cols[4].replace(/"/g,"").trim();
-const optionD = cols[5].replace(/"/g,"").trim();
-const correct = cols[6].replace(/"/g,"").trim().toUpperCase();
+const question = cols[2].replace(/"/g,"").trim();
+const optionA = cols[3].replace(/"/g,"").trim();
+const optionB = cols[4].replace(/"/g,"").trim();
+const optionC = cols[5].replace(/"/g,"").trim();
+const optionD = cols[6].replace(/"/g,"").trim();
+const correct = cols[7].replace(/"/g,"").trim().toUpperCase();
 
 // prevent duplicates
 const snapshot = await getDocs(collection(db,"questions"));
