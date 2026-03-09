@@ -59,7 +59,6 @@ async function loadCurrentPin() {
   const snap = await getDoc(ref);
 
   const list = document.getElementById("pinList");
-
   if (!list) return;
 
   if (snap.exists()) {
@@ -94,7 +93,7 @@ async function savePIN() {
     });
   }
 
-  // Create or overwrite master code
+  // Save new PIN
   await setDoc(ref, {
     activeCode: pin,
     createdAt: new Date(),
@@ -107,6 +106,7 @@ async function savePIN() {
 
 // ================= CANDIDATE START =================
 async function startTest() {
+
   const pinInput = document.getElementById("pinCode");
   if (!pinInput) return;
 
@@ -139,29 +139,43 @@ async function startTest() {
 
 // ================= TIMER =================
 function startTimer() {
+
   clearInterval(state.timer);
 
   state.timer = setInterval(() => {
+
     state.remaining--;
+
+    const timerEl = document.getElementById("timer");
+
+    if (timerEl) {
+      const mins = Math.floor(state.remaining / 60);
+      const secs = state.remaining % 60;
+      timerEl.textContent = `${mins}:${secs.toString().padStart(2,"0")}`;
+    }
 
     if (state.remaining <= 0) {
       clearInterval(state.timer);
       alert("Time up!");
     }
+
   }, 1000);
 }
 
 // ================= ANALYTICS =================
 function showAnalytics() {
+
   const results = store.getResults();
+
   const total = document.getElementById("totalCandidates");
   const avgEl = document.getElementById("avgScore");
 
   if (!total || !avgEl) return;
 
   const scores = results.map(r => r.score);
+
   const avg = scores.length
-    ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+    ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length)
     : 0;
 
   total.textContent = results.length;
@@ -170,14 +184,17 @@ function showAnalytics() {
 
 // ================= EXPORT RESULTS =================
 function exportResults() {
+
   const res = store.getResults();
+
   let csv = "Date,PIN,Score,Grade\n";
 
-  res.forEach(r => {
+  res.forEach(r=>{
     csv += `${r.date},${r.pin},${r.score},${r.grade}\n`;
   });
 
   const blob = new Blob([csv]);
+
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "FIIRO_results.csv";
@@ -186,15 +203,19 @@ function exportResults() {
 
 // ================= DOWNLOAD PIN ARCHIVE =================
 async function downloadArchive() {
-  const snapshot = await getDocs(collection(db, "codeArchive"));
+
+  const snapshot = await getDocs(collection(db,"codeArchive"));
+
   let csv = "Code,CreatedAt,ExpiredAt,CreatedBy\n";
 
-  snapshot.forEach(docu => {
+  snapshot.forEach(docu=>{
     const d = docu.data();
+
     csv += `${d.code},${d.createdAt?.toDate()},${d.expiredAt?.toDate()},${d.createdBy}\n`;
   });
 
   const blob = new Blob([csv]);
+
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "PIN_archive.csv";
@@ -206,6 +227,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ADMIN PAGE
   if (document.getElementById("loginBtn")) {
+
     document.getElementById("loginBtn").onclick = adminLogin;
     document.getElementById("generatePinBtn").onclick = generatePIN;
     document.getElementById("savePinBtn").onclick = savePIN;
@@ -215,7 +237,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // CANDIDATE PAGE
   if (document.getElementById("startBtn")) {
-    document.getElementById("startBtn").onclick = startTest;
+
+    const startBtn = document.getElementById("startBtn");
+    const agree = document.getElementById("agreeCheck");
+
+    // Enable START only after instructions agreement
+    if (agree && startBtn) {
+      agree.addEventListener("change", () => {
+        startBtn.disabled = !agree.checked;
+      });
+    }
+
+    startBtn.onclick = startTest;
   }
 
 });
