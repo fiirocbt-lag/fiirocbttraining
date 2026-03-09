@@ -87,6 +87,52 @@ async function uploadCSV(file){
 
 const text = await file.text();
 
+// remove windows carriage returns
+const rows = text.replace(/\r/g,"").split("\n");
+
+let count = 0;
+
+for(let i=1;i<rows.length;i++){
+
+const row = rows[i].trim();
+
+if(!row) continue;
+
+// split simple CSV
+const cols = row.split(",");
+
+if(cols.length < 7) continue;
+
+const section = cols[0].trim().toUpperCase();
+const question = cols[1].trim();
+const optionA = cols[2].trim();
+const optionB = cols[3].trim();
+const optionC = cols[4].trim();
+const optionD = cols[5].trim();
+const correct = cols[6].trim().toUpperCase();
+
+await addDoc(collection(db,"questions"),{
+
+section: section,
+text: question,
+optionA: optionA,
+optionB: optionB,
+optionC: optionC,
+optionD: optionD,
+correct: correct
+
+});
+
+count++;
+
+}
+
+alert(count + " questions uploaded successfully");
+
+}
+
+const text = await file.text();
+
 const rows = text.split("\n");
 
 let count = 0;
