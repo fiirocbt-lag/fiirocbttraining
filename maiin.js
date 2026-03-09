@@ -86,7 +86,7 @@ if(!cols || cols.length < 7) continue;
 
 await addDoc(collection(db,"questions"),{
 
-section: cols[0].trim().toUpperCase(),
+section: cols[0].replace(/"/g,"").trim().toUpperCase(),
 text: cols[1].trim(),
 optionA: cols[2].trim(),
 optionB: cols[3].trim(),
