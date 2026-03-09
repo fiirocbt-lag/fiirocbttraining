@@ -22,6 +22,7 @@ appId: "1:152813456186:web:501ec9415973cf46221e03"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+
 // ================= GLOBAL STATE =================
 let questions = [];
 let sectionA = [];
@@ -35,6 +36,25 @@ let timer;
 let remainingTime = 3600;
 
 let candidatePin = "";
+
+let excelQuestions = [];
+
+
+// ================= SHUFFLE FUNCTION =================
+function shuffle(array){
+
+for(let i = array.length - 1; i > 0; i--){
+
+const j = Math.floor(Math.random() * (i + 1));
+
+[array[i], array[j]] = [array[j], array[i]];
+
+}
+
+return array;
+
+}
+
 
 // ================= ADMIN LOGIN =================
 function adminLogin(){
@@ -59,7 +79,8 @@ loadAnalytics();
 
 }
 
-// ================= PIN =================
+
+// ================= PIN MANAGEMENT =================
 function generatePIN(){
 
 const pin = Math.floor(100000 + Math.random()*900000).toString();
@@ -86,10 +107,8 @@ alert("PIN saved successfully");
 
 }
 
-// ================= EXCEL QUESTIONS =================
-let excelQuestions = [];
 
-// ================= PREVIEW EXCEL =================
+// ================= EXCEL PREVIEW =================
 function previewExcel(){
 
 const file = document.getElementById("excelFile").files[0];
@@ -122,6 +141,7 @@ const r = rows[i];
 if(!r[1]) continue;
 
 const q = {
+
 section:String(r[0]).trim().toUpperCase(),
 text:String(r[1]).trim(),
 optionA:String(r[2]).trim(),
@@ -129,6 +149,7 @@ optionB:String(r[3]).trim(),
 optionC:String(r[4]).trim(),
 optionD:String(r[5]).trim(),
 correct:String(r[6]).trim().toUpperCase()
+
 };
 
 excelQuestions.push(q);
@@ -147,7 +168,7 @@ html += "</table>";
 
 document.getElementById("excelPreview").innerHTML = html;
 
-alert(excelQuestions.length + " questions loaded from Excel");
+alert(excelQuestions.length + " questions loaded");
 
 };
 
@@ -155,15 +176,13 @@ reader.readAsArrayBuffer(file);
 
 }
 
-// ================= UPLOAD TO FIREBASE =================
+
+// ================= UPLOAD QUESTIONS =================
 async function uploadExcel(){
 
 if(excelQuestions.length === 0){
-
 alert("Preview Excel first");
-
 return;
-
 }
 
 let count = 0;
@@ -192,6 +211,7 @@ alert(count + " questions uploaded successfully");
 
 }
 
+
 // ================= LOAD QUESTIONS =================
 async function loadQuestions(){
 
@@ -199,99 +219,122 @@ const snapshot = await getDocs(collection(db,"questions"));
 
 questions = snapshot.docs.map(d=>d.data());
 
-sectionA = questions.filter(q=>q.section==="A");
-sectionB = questions.filter(q=>q.section==="B");
+sectionA = shuffle(questions.filter(q=>q.section==="A"));
+sectionB = shuffle(questions.filter(q=>q.section==="B"));
 
-currentSection="A";
-currentQuestion=0;
+currentSection = "A";
+currentQuestion = 0;
 
 showQuestion();
 
 }
 
+
 // ================= GET CURRENT LIST =================
 function getCurrentList(){
 
-return currentSection==="A"?sectionA:sectionB;
+return currentSection==="A" ? sectionA : sectionB;
 
 }
+
 
 // ================= SHOW QUESTION =================
 function showQuestion(){
 
-const list=getCurrentList();
+const list = getCurrentList();
 
-if(list.length===0){
+if(list.length === 0){
 
-document.getElementById("question").innerText=
-"No questions found for Section "+currentSection;
+document.getElementById("question").innerText =
+"No questions found for Section " + currentSection;
 
 return;
 
 }
 
-const q=list[currentQuestion];
+const q = list[currentQuestion];
 
-document.getElementById("question").innerText=q.text;
+document.getElementById("question").innerText = q.text;
 
-document.getElementById("options").innerHTML=`
 
-<div class="option"><label><input type="radio" name="opt" value="A"> ${q.optionA}</label></div>
+// RANDOMIZE OPTIONS
+const options = [
 
-<div class="option"><label><input type="radio" name="opt" value="B"> ${q.optionB}</label></div>
+{key:"A", text:q.optionA},
+{key:"B", text:q.optionB},
+{key:"C", text:q.optionC},
+{key:"D", text:q.optionD}
 
-<div class="option"><label><input type="radio" name="opt" value="C"> ${q.optionC}</label></div>
+];
 
-<div class="option"><label><input type="radio" name="opt" value="D"> ${q.optionD}</label></div>
+shuffle(options);
 
+let html = "";
+
+options.forEach(opt=>{
+
+html += `
+<div class="option">
+<label>
+<input type="radio" name="opt" value="${opt.key}">
+${opt.text}
+</label>
+</div>
 `;
 
-document.getElementById("progress").innerText=
+});
+
+document.getElementById("options").innerHTML = html;
+
+document.getElementById("progress").innerText =
 `Section ${currentSection} • Question ${currentQuestion+1} of ${list.length}`;
 
 if(answers[currentSection+"_"+currentQuestion]){
 
 document.querySelector(
 `input[value="${answers[currentSection+"_"+currentQuestion]}"]`
-).checked=true;
+).checked = true;
 
 }
 
 }
+
 
 // ================= SAVE ANSWER =================
 function saveAnswer(){
 
-const selected=document.querySelector('input[name="opt"]:checked');
+const selected = document.querySelector('input[name="opt"]:checked');
 
 if(selected){
 
-answers[currentSection+"_"+currentQuestion]=selected.value;
+answers[currentSection+"_"+currentQuestion] = selected.value;
 
 }
 
 }
 
-// ================= NEXT =================
+
+// ================= NEXT QUESTION =================
 function nextQuestion(){
 
 saveAnswer();
 
-const list=getCurrentList();
+const list = getCurrentList();
 
-if(currentQuestion<list.length-1){
+if(currentQuestion < list.length-1){
 
 currentQuestion++;
+
 showQuestion();
 
 }else{
 
-if(currentSection==="A"){
+if(currentSection === "A"){
 
 alert("Section A completed. Starting Section B.");
 
-currentSection="B";
-currentQuestion=0;
+currentSection = "B";
+currentQuestion = 0;
 
 showQuestion();
 
@@ -305,36 +348,39 @@ submitExam();
 
 }
 
+
 // ================= PREVIOUS =================
 function prevQuestion(){
 
 saveAnswer();
 
-if(currentQuestion>0){
+if(currentQuestion > 0){
 
 currentQuestion--;
+
 showQuestion();
 
 }
 
 }
 
+
 // ================= TIMER =================
 function startTimer(){
 
 clearInterval(timer);
 
-timer=setInterval(()=>{
+timer = setInterval(()=>{
 
 remainingTime--;
 
-const mins=Math.floor(remainingTime/60);
-const secs=remainingTime%60;
+const mins = Math.floor(remainingTime/60);
+const secs = remainingTime % 60;
 
-document.getElementById("timer").innerText=
+document.getElementById("timer").innerText =
 `${mins}:${secs.toString().padStart(2,"0")}`;
 
-if(remainingTime<=0){
+if(remainingTime <= 0){
 
 clearInterval(timer);
 submitExam();
@@ -345,62 +391,67 @@ submitExam();
 
 }
 
+
 // ================= START TEST =================
 async function startTest(){
 
-const pin=document.getElementById("pinCode").value.trim();
+const pin = document.getElementById("pinCode").value.trim();
 
 if(!pin){
 alert("Enter PIN");
 return;
 }
 
-const snap=await getDoc(doc(db,"system","masterCode"));
+const snap = await getDoc(doc(db,"system","masterCode"));
 
 if(!snap.exists()){
 alert("System error");
 return;
 }
 
-if(pin!==snap.data().activeCode){
+if(pin !== snap.data().activeCode){
 alert("Invalid PIN");
 return;
 }
 
-candidatePin=pin;
+candidatePin = pin;
 
 document.getElementById("candidateForm").classList.add("hidden");
 document.getElementById("quiz").classList.remove("hidden");
 
 await loadQuestions();
+
 startTimer();
 
 }
 
-// ================= SCORE =================
+
+// ================= CALCULATE SCORE =================
 function calculateScore(){
 
-let score=0;
+let score = 0;
 
 sectionA.forEach((q,i)=>{
-if(answers["A_"+i]===q.correct) score++;
+if(answers["A_"+i] === q.correct) score++;
 });
 
 sectionB.forEach((q,i)=>{
-if(answers["B_"+i]===q.correct) score++;
+if(answers["B_"+i] === q.correct) score++;
 });
 
 return score;
 
 }
 
-// ================= SUBMIT =================
+
+// ================= SUBMIT EXAM =================
 async function submitExam(){
 
 clearInterval(timer);
 
-const total=sectionA.length+sectionB.length;
-const score=calculateScore();
+const total = sectionA.length + sectionB.length;
+
+const score = calculateScore();
 
 await addDoc(collection(db,"results"),{
 
@@ -414,78 +465,80 @@ submittedAt:new Date()
 document.getElementById("quiz").classList.add("hidden");
 document.getElementById("result").classList.remove("hidden");
 
-document.getElementById("scoreText").innerText=
+document.getElementById("scoreText").innerText =
 `You scored ${score} out of ${total}`;
 
 }
 
+
 // ================= ANALYTICS =================
 async function loadAnalytics(){
 
-const snapshot=await getDocs(collection(db,"results"));
+const snapshot = await getDocs(collection(db,"results"));
 
-const results=snapshot.docs.map(d=>d.data());
+const results = snapshot.docs.map(d=>d.data());
 
-if(results.length===0) return;
+if(results.length === 0) return;
 
-const scores=results.map(r=>r.score);
+const scores = results.map(r=>r.score);
 
-const avg=scores.reduce((a,b)=>a+b,0)/scores.length;
+const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
 
-document.getElementById("totalCandidates").innerText=results.length;
-document.getElementById("avgScore").innerText=avg.toFixed(1);
-document.getElementById("highScore").innerText=Math.max(...scores);
-document.getElementById("lowScore").innerText=Math.min(...scores);
+document.getElementById("totalCandidates").innerText = results.length;
+document.getElementById("avgScore").innerText = avg.toFixed(1);
+document.getElementById("highScore").innerText = Math.max(...scores);
+document.getElementById("lowScore").innerText = Math.min(...scores);
 
-document.getElementById("passCount").innerText=
+document.getElementById("passCount").innerText =
 scores.filter(s=>s>=50).length;
 
-document.getElementById("failCount").innerText=
+document.getElementById("failCount").innerText =
 scores.filter(s=>s<50).length;
 
 }
 
+
 // ================= EVENTS =================
 document.addEventListener("DOMContentLoaded",()=>{
 
-const loginBtn=document.getElementById("loginBtn");
+const loginBtn = document.getElementById("loginBtn");
 
 if(loginBtn){
 
-loginBtn.onclick=adminLogin;
+loginBtn.onclick = adminLogin;
 
-document.getElementById("generatePinBtn").onclick=generatePIN;
-document.getElementById("savePinBtn").onclick=savePIN;
+document.getElementById("generatePinBtn").onclick = generatePIN;
+document.getElementById("savePinBtn").onclick = savePIN;
 
-document.getElementById("previewExcelBtn").onclick=previewExcel;
-document.getElementById("uploadExcelBtn").onclick=uploadExcel;
+document.getElementById("previewExcelBtn").onclick = previewExcel;
+document.getElementById("uploadExcelBtn").onclick = uploadExcel;
 
 }
 
-const startBtn=document.getElementById("startBtn");
+const startBtn = document.getElementById("startBtn");
 
 if(startBtn){
 
-const agree=document.getElementById("agreeCheck");
+const agree = document.getElementById("agreeCheck");
 
 agree.addEventListener("change",()=>{
 
-startBtn.disabled=!agree.checked;
+startBtn.disabled = !agree.checked;
 
 });
 
-startBtn.onclick=startTest;
+startBtn.onclick = startTest;
 
-document.getElementById("nextBtn").onclick=nextQuestion;
-document.getElementById("prevBtn").onclick=prevQuestion;
-document.getElementById("submitBtn").onclick=submitExam;
+document.getElementById("nextBtn").onclick = nextQuestion;
+document.getElementById("prevBtn").onclick = prevQuestion;
+document.getElementById("submitBtn").onclick = submitExam;
 
 }
 
-const restartBtn=document.getElementById("restartBtn");
+const restartBtn = document.getElementById("restartBtn");
 
 if(restartBtn){
-restartBtn.onclick=()=>location.reload();
+restartBtn.onclick = ()=>location.reload();
 }
 
 });
