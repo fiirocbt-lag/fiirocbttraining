@@ -61,8 +61,11 @@ loadAnalytics();
 
 // ================= PIN =================
 function generatePIN(){
+
 const pin = Math.floor(100000 + Math.random()*900000).toString();
+
 document.getElementById("newPin").value = pin;
+
 }
 
 async function savePIN(){
@@ -83,55 +86,107 @@ alert("PIN saved successfully");
 
 }
 
-// ================= CSV UPLOAD =================
-async function uploadCSV(file){
+// ================= EXCEL QUESTIONS =================
+let excelQuestions = [];
 
-const text = await file.text();
+// ================= PREVIEW EXCEL =================
+function previewExcel(){
 
-// remove Windows carriage returns and BOM
-const clean = text.replace(/\r/g,"").replace(/^\uFEFF/, "");
+const file = document.getElementById("excelFile").files[0];
 
-const rows = clean.split("\n");
+if(!file){
+alert("Select Excel file");
+return;
+}
 
-let count = 0;
+const reader = new FileReader();
+
+reader.onload = function(e){
+
+const data = new Uint8Array(e.target.result);
+
+const workbook = XLSX.read(data,{type:"array"});
+
+const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+const rows = XLSX.utils.sheet_to_json(sheet,{header:1});
+
+excelQuestions = [];
+
+let html = "<table border='1' style='width:100%;margin-top:10px'>";
 
 for(let i=1;i<rows.length;i++){
 
-const row = rows[i].trim();
+const r = rows[i];
 
-if(!row) continue;
+if(!r[1]) continue;
 
-// safer CSV split (handles commas in text)
-const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+const q = {
+section:String(r[0]).trim().toUpperCase(),
+text:String(r[1]).trim(),
+optionA:String(r[2]).trim(),
+optionB:String(r[3]).trim(),
+optionC:String(r[4]).trim(),
+optionD:String(r[5]).trim(),
+correct:String(r[6]).trim().toUpperCase()
+};
 
-console.log("ROW:", cols);
+excelQuestions.push(q);
 
-if(cols.length < 7){
-console.warn("Skipped row:", row);
+html += `
+<tr>
+<td>${q.section}</td>
+<td>${q.text}</td>
+<td>${q.correct}</td>
+</tr>
+`;
+
+}
+
+html += "</table>";
+
+document.getElementById("excelPreview").innerHTML = html;
+
+alert(excelQuestions.length + " questions loaded from Excel");
+
+};
+
+reader.readAsArrayBuffer(file);
+
+}
+
+// ================= UPLOAD TO FIREBASE =================
+async function uploadExcel(){
+
+if(excelQuestions.length === 0){
+
+alert("Preview Excel first");
+
+return;
+
+}
+
+let count = 0;
+
+const existing = await getDocs(collection(db,"questions"));
+
+const existingTexts = existing.docs.map(d=>d.data().text);
+
+for(const q of excelQuestions){
+
+if(existingTexts.includes(q.text)){
+console.log("Duplicate skipped:",q.text);
 continue;
 }
 
-const section = cols[0].trim().toUpperCase();
-const question = cols[1].trim();
-const optionA = cols[2].trim();
-const optionB = cols[3].trim();
-const optionC = cols[4].trim();
-const optionD = cols[5].trim();
-const correct = cols[6].trim().toUpperCase();
-
-await addDoc(collection(db,"questions"),{
-section: section,
-text: question,
-optionA: optionA,
-optionB: optionB,
-optionC: optionC,
-optionD: optionD,
-correct: correct
-});
+await addDoc(collection(db,"questions"),q);
 
 count++;
 
 }
+
+document.getElementById("uploadStatus").innerText =
+count + " questions uploaded";
 
 alert(count + " questions uploaded successfully");
 
@@ -142,7 +197,7 @@ async function loadQuestions(){
 
 const snapshot = await getDocs(collection(db,"questions"));
 
-questions = snapshot.docs.map(doc=>doc.data());
+questions = snapshot.docs.map(d=>d.data());
 
 sectionA = questions.filter(q=>q.section==="A");
 sectionB = questions.filter(q=>q.section==="B");
@@ -154,9 +209,11 @@ showQuestion();
 
 }
 
-// ================= CURRENT LIST =================
+// ================= GET CURRENT LIST =================
 function getCurrentList(){
+
 return currentSection==="A"?sectionA:sectionB;
+
 }
 
 // ================= SHOW QUESTION =================
@@ -165,9 +222,12 @@ function showQuestion(){
 const list=getCurrentList();
 
 if(list.length===0){
+
 document.getElementById("question").innerText=
 "No questions found for Section "+currentSection;
+
 return;
+
 }
 
 const q=list[currentQuestion];
@@ -177,8 +237,11 @@ document.getElementById("question").innerText=q.text;
 document.getElementById("options").innerHTML=`
 
 <div class="option"><label><input type="radio" name="opt" value="A"> ${q.optionA}</label></div>
+
 <div class="option"><label><input type="radio" name="opt" value="B"> ${q.optionB}</label></div>
+
 <div class="option"><label><input type="radio" name="opt" value="C"> ${q.optionC}</label></div>
+
 <div class="option"><label><input type="radio" name="opt" value="D"> ${q.optionD}</label></div>
 
 `;
@@ -202,7 +265,9 @@ function saveAnswer(){
 const selected=document.querySelector('input[name="opt"]:checked');
 
 if(selected){
+
 answers[currentSection+"_"+currentQuestion]=selected.value;
+
 }
 
 }
@@ -392,14 +457,8 @@ loginBtn.onclick=adminLogin;
 document.getElementById("generatePinBtn").onclick=generatePIN;
 document.getElementById("savePinBtn").onclick=savePIN;
 
-document.getElementById("uploadBtn").onclick=()=>{
-
-const file=document.getElementById("uploadCSV").files[0];
-
-if(file) uploadCSV(file);
-else alert("Select CSV file");
-
-};
+document.getElementById("previewExcelBtn").onclick=previewExcel;
+document.getElementById("uploadExcelBtn").onclick=uploadExcel;
 
 }
 
@@ -410,7 +469,9 @@ if(startBtn){
 const agree=document.getElementById("agreeCheck");
 
 agree.addEventListener("change",()=>{
+
 startBtn.disabled=!agree.checked;
+
 });
 
 startBtn.onclick=startTest;
