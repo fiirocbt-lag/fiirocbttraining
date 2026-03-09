@@ -28,10 +28,10 @@ let sectionA = [];
 let sectionB = [];
 let answers = {};
 let currentQuestion = 0;
+let currentSection = "A";
 let timer;
 let remainingTime = 3600;
 let candidatePin = "";
-let currentSection = "A";
 
 // ================= ADMIN LOGIN =================
 function adminLogin(){
@@ -46,7 +46,6 @@ document.getElementById("loginBox").classList.add("hidden");
 document.getElementById("adminPanel").classList.remove("hidden");
 
 loadAnalytics();
-
 }
 
 // ================= PIN =================
@@ -66,7 +65,6 @@ createdAt:new Date()
 });
 
 alert("PIN saved successfully");
-
 }
 
 // ================= CSV UPLOAD =================
@@ -79,14 +77,16 @@ let count = 0;
 
 for(let row of rows){
 
-const cols = row.split(",");
+if(!row.trim()) continue;
 
-if(cols.length < 7) continue;
-if(!cols[1].trim()) continue;
+// robust CSV parsing
+const cols = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+
+if(!cols || cols.length < 7) continue;
 
 await addDoc(collection(db,"questions"),{
 
-section: cols[0].trim(),
+section: cols[0].trim().toUpperCase(),
 text: cols[1].trim(),
 optionA: cols[2].trim(),
 optionB: cols[3].trim(),
@@ -97,11 +97,9 @@ correct: cols[6].trim().toUpperCase()
 });
 
 count++;
-
 }
 
-alert(count+" questions uploaded");
-
+alert(count+" questions uploaded successfully");
 }
 
 // ================= LOAD QUESTIONS =================
@@ -114,7 +112,6 @@ id:doc.id,
 ...doc.data()
 }));
 
-// split sections
 sectionA = questions.filter(q=>q.section==="A");
 sectionB = questions.filter(q=>q.section==="B");
 
@@ -125,7 +122,6 @@ currentSection = "A";
 currentQuestion = 0;
 
 showQuestion();
-
 }
 
 // ================= GET CURRENT LIST =================
@@ -137,6 +133,13 @@ return currentSection==="A" ? sectionA : sectionB;
 function showQuestion(){
 
 const list = getCurrentList();
+
+if(list.length === 0){
+document.getElementById("question").innerText =
+"No questions found for Section "+currentSection;
+return;
+}
+
 const q = list[currentQuestion];
 
 document.getElementById("question").innerText = q.text;
@@ -163,9 +166,8 @@ document.getElementById("progress").innerText =
 `Section ${currentSection} • Question ${currentQuestion+1} of ${list.length}`;
 
 if(answers[currentSection+"_"+currentQuestion]){
-document.querySelector(`input[value="${answers[currentSection+"_"+currentQuestion]}"]`).checked=true;
+document.querySelector(`input[value="${answers[currentSection+"_"+currentQuestion]}"]`).checked = true;
 }
-
 }
 
 // ================= SAVE ANSWER =================
@@ -176,7 +178,6 @@ const selected = document.querySelector('input[name="opt"]:checked');
 if(selected){
 answers[currentSection+"_"+currentQuestion] = selected.value;
 }
-
 }
 
 // ================= NEXT =================
@@ -197,8 +198,9 @@ else{
 if(currentSection==="A"){
 
 alert("Section A completed. Starting Section B.");
-currentSection="B";
-currentQuestion=0;
+
+currentSection = "B";
+currentQuestion = 0;
 showQuestion();
 
 }
@@ -209,7 +211,6 @@ submitExam();
 }
 
 }
-
 }
 
 // ================= PREVIOUS =================
@@ -217,13 +218,10 @@ function prevQuestion(){
 
 saveAnswer();
 
-if(currentQuestion>0){
-
+if(currentQuestion > 0){
 currentQuestion--;
 showQuestion();
-
 }
-
 }
 
 // ================= TIMER =================
@@ -231,64 +229,61 @@ function startTimer(){
 
 clearInterval(timer);
 
-timer=setInterval(()=>{
+timer = setInterval(()=>{
 
 remainingTime--;
 
-const mins=Math.floor(remainingTime/60);
-const secs=remainingTime%60;
+const mins = Math.floor(remainingTime/60);
+const secs = remainingTime % 60;
 
 document.getElementById("timer").innerText =
 `${mins}:${secs.toString().padStart(2,"0")}`;
 
-if(remainingTime<=0){
+if(remainingTime <= 0){
 clearInterval(timer);
 submitExam();
 }
 
 },1000);
-
 }
 
 // ================= START TEST =================
 async function startTest(){
 
-const pin=document.getElementById("pinCode").value.trim();
+const pin = document.getElementById("pinCode").value.trim();
 if(!pin){ alert("Enter PIN"); return; }
 
-const snap=await getDoc(doc(db,"system","masterCode"));
+const snap = await getDoc(doc(db,"system","masterCode"));
 if(!snap.exists()){ alert("System error"); return; }
 
-if(pin!==snap.data().activeCode){
+if(pin !== snap.data().activeCode){
 alert("Invalid PIN");
 return;
 }
 
-candidatePin=pin;
+candidatePin = pin;
 
 document.getElementById("candidateForm").classList.add("hidden");
 document.getElementById("quiz").classList.remove("hidden");
 
 await loadQuestions();
 startTimer();
-
 }
 
 // ================= SCORE =================
 function calculateScore(){
 
-let score=0;
+let score = 0;
 
 sectionA.forEach((q,i)=>{
-if(answers["A_"+i]===q.correct) score++;
+if(answers["A_"+i] === q.correct) score++;
 });
 
 sectionB.forEach((q,i)=>{
-if(answers["B_"+i]===q.correct) score++;
+if(answers["B_"+i] === q.correct) score++;
 });
 
 return score;
-
 }
 
 // ================= SUBMIT =================
@@ -301,10 +296,10 @@ const score = calculateScore();
 
 await addDoc(collection(db,"results"),{
 
-pin:candidatePin,
-score:score,
-total:total,
-submittedAt:new Date()
+pin: candidatePin,
+score: score,
+total: total,
+submittedAt: new Date()
 
 });
 
@@ -313,7 +308,6 @@ document.getElementById("result").classList.remove("hidden");
 
 document.getElementById("scoreText").innerText =
 `You scored ${score} out of ${total}`;
-
 }
 
 // ================= ADMIN ANALYTICS =================
@@ -322,7 +316,7 @@ async function loadAnalytics(){
 const snapshot = await getDocs(collection(db,"results"));
 const results = snapshot.docs.map(d=>d.data());
 
-if(results.length===0) return;
+if(results.length === 0) return;
 
 const scores = results.map(r=>r.score);
 
@@ -338,49 +332,49 @@ scores.filter(s=>s>=50).length;
 
 document.getElementById("failCount").innerText =
 scores.filter(s=>s<50).length;
-
 }
 
 // ================= EVENTS =================
 document.addEventListener("DOMContentLoaded",()=>{
 
-const loginBtn=document.getElementById("loginBtn");
+const loginBtn = document.getElementById("loginBtn");
 
 if(loginBtn){
 
-loginBtn.onclick=adminLogin;
-document.getElementById("generatePinBtn").onclick=generatePIN;
-document.getElementById("savePinBtn").onclick=savePIN;
+loginBtn.onclick = adminLogin;
+document.getElementById("generatePinBtn").onclick = generatePIN;
+document.getElementById("savePinBtn").onclick = savePIN;
 
-document.getElementById("uploadBtn").onclick=()=>{
-const file=document.getElementById("uploadCSV").files[0];
+document.getElementById("uploadBtn").onclick = ()=>{
+
+const file = document.getElementById("uploadCSV").files[0];
+
 if(file) uploadCSV(file);
 else alert("Select CSV file");
-};
 
+};
 }
 
-const startBtn=document.getElementById("startBtn");
+const startBtn = document.getElementById("startBtn");
 
 if(startBtn){
 
-const agree=document.getElementById("agreeCheck");
+const agree = document.getElementById("agreeCheck");
 
 agree.addEventListener("change",()=>{
-startBtn.disabled=!agree.checked;
+startBtn.disabled = !agree.checked;
 });
 
-startBtn.onclick=startTest;
+startBtn.onclick = startTest;
 
-document.getElementById("nextBtn").onclick=nextQuestion;
-document.getElementById("prevBtn").onclick=prevQuestion;
-document.getElementById("submitBtn").onclick=submitExam;
-
+document.getElementById("nextBtn").onclick = nextQuestion;
+document.getElementById("prevBtn").onclick = prevQuestion;
+document.getElementById("submitBtn").onclick = submitExam;
 }
 
-const restartBtn=document.getElementById("restartBtn");
+const restartBtn = document.getElementById("restartBtn");
 if(restartBtn){
-restartBtn.onclick=()=>location.reload();
+restartBtn.onclick = ()=> location.reload();
 }
 
 });
