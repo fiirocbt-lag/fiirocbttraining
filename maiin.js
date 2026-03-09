@@ -496,7 +496,60 @@ document.getElementById("failCount").innerText =
 scores.filter(s=>s<50).length;
 
 }
+// ================= DOWNLOAD ADMIN ACTIVITY =================
+async function downloadAuditLog(){
 
+const snapshot = await getDocs(collection(db,"codeArchive"));
+
+let csv = "Code,CreatedAt,ExpiredAt,CreatedBy\n";
+
+snapshot.forEach(docu => {
+
+const d = docu.data();
+
+csv += `${d.code || ""},${d.createdAt || ""},${d.expiredAt || ""},${d.createdBy || ""}\n`;
+
+});
+
+const blob = new Blob([csv], {type:"text/csv"});
+
+const a = document.createElement("a");
+
+a.href = URL.createObjectURL(blob);
+
+a.download = "admin_activity_log.csv";
+
+a.click();
+
+}
+
+
+// ================= DOWNLOAD RESULTS =================
+async function exportResults(){
+
+const snapshot = await getDocs(collection(db,"results"));
+
+let csv = "PIN,Score,Total,SubmittedAt\n";
+
+snapshot.forEach(docu => {
+
+const d = docu.data();
+
+csv += `${d.pin},${d.score},${d.total},${d.submittedAt}\n`;
+
+});
+
+const blob = new Blob([csv], {type:"text/csv"});
+
+const a = document.createElement("a");
+
+a.href = URL.createObjectURL(blob);
+
+a.download = "cbt_results.csv";
+
+a.click();
+
+}
 
 // ================= EVENTS =================
 document.addEventListener("DOMContentLoaded",()=>{
@@ -542,3 +595,15 @@ restartBtn.onclick = ()=>location.reload();
 }
 
 });
+// DOWNLOAD BUTTONS
+const auditBtn = document.getElementById("downloadAuditBtn");
+
+if(auditBtn){
+auditBtn.onclick = downloadAuditLog;
+}
+
+const exportBtn = document.getElementById("exportBtn");
+
+if(exportBtn){
+exportBtn.onclick = exportResults;
+}
