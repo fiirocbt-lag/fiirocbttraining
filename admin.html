@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <title>FIIRO CBT Admin Panel</title>
 
 <link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="logo.jpg">
 
 <!-- Excel Reader Library -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
@@ -22,11 +24,14 @@
 <div class="menu-tab">
 <a href="index.html" title="Go to Candidate Page">&#9776;</a>
 </div>
+
 </header>
+
 
 <main class="container">
 
-<!-- ================= ADMIN LOGIN ================= -->
+
+<!-- ADMIN LOGIN -->
 <section id="loginBox" class="card">
 
 <h2>Admin Login</h2>
@@ -44,23 +49,20 @@
 </section>
 
 
-<!-- ================= ADMIN DASHBOARD ================= -->
+
+<!-- ADMIN DASHBOARD -->
 <section id="adminPanel" class="card hidden">
 
 
-<!-- ================= EXCEL QUESTION UPLOAD ================= -->
+<!-- QUESTION UPLOAD -->
 
 <h2>Upload Questions (Excel)</h2>
 
 <input type="file" id="excelFile" accept=".xlsx" />
 
-<button id="previewExcelBtn">
-Preview Excel File
-</button>
+<button id="previewExcelBtn">Preview Excel File</button>
 
-<button id="uploadExcelBtn">
-Upload Questions to Firebase
-</button>
+<button id="uploadExcelBtn">Upload Questions to Firebase</button>
 
 <p id="uploadStatus"></p>
 
@@ -70,19 +72,15 @@ Upload Questions to Firebase
 <hr style="margin:30px 0;">
 
 
-<!-- ================= PIN MANAGEMENT ================= -->
+<!-- PIN MANAGEMENT -->
 
 <h2>PIN Management</h2>
 
 <input type="text" id="newPin" placeholder="Generate new PIN" readonly />
 
-<button id="generatePinBtn">
-Generate Random PIN
-</button>
+<button id="generatePinBtn">Generate Random PIN</button>
 
-<button id="savePinBtn">
-Save PIN
-</button>
+<button id="savePinBtn">Save PIN</button>
 
 <ul id="pinList"></ul>
 
@@ -90,7 +88,7 @@ Save PIN
 <hr style="margin:30px 0;">
 
 
-<!-- ================= ANALYTICS SUMMARY ================= -->
+<!-- ANALYTICS -->
 
 <h2>Analytics Summary</h2>
 
@@ -110,24 +108,22 @@ Save PIN
 <hr style="margin:30px 0;">
 
 
-<!-- ================= DOWNLOAD DATA ================= -->
+<!-- DOWNLOAD DATA -->
 
 <h2>Integrity / Audit Log</h2>
 
-<button id="downloadAuditBtn">
-Download Admin Activity Log (CSV)
-</button>
+<button id="downloadAuditBtn">Download Admin Activity Log (CSV)</button>
 
-<button id="exportBtn">
-Download All Results (CSV)
-</button>
+<button id="exportBtn">Download All Results (CSV)</button>
 
 
 </section>
 
 </main>
 
-<script type="module" src="./maiin.js?v=30"></script>
+
+<!-- MAIN SCRIPT -->
+<script type="module" src="./maiin.js?v=31" defer></script>
 
 </body>
 </html>
