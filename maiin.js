@@ -1,4 +1,3 @@
-console.log("CBT script loaded");
 // ================= FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import {
@@ -22,7 +21,7 @@ appId: "1:152813456186:web:501ec9415973cf46221e03"
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
+console.log("CBT script loaded");
 
 // ================= GLOBAL STATE =================
 let questions = [];
