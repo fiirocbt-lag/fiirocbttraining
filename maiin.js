@@ -88,37 +88,38 @@ async function uploadCSV(file){
 
 const text = await file.text();
 
-const rows = text.replace(/\r/g,"").split("\n");
+// remove Windows carriage returns and BOM
+const clean = text.replace(/\r/g,"").replace(/^\uFEFF/, "");
+
+const rows = clean.split("\n");
 
 let count = 0;
 
 for(let i=1;i<rows.length;i++){
 
-const row = rows[i];
+const row = rows[i].trim();
 
-if(!row.trim()) continue;
+if(!row) continue;
 
-// SAFE CSV SPLIT
+// safer CSV split (handles commas in text)
 const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
 
-if(cols.length < 7) continue;
+console.log("ROW:", cols);
 
-const section = cols[0].replace(/"/g,"").trim().toUpperCase();
-const question = cols[2].replace(/"/g,"").trim();
-const optionA = cols[3].replace(/"/g,"").trim();
-const optionB = cols[4].replace(/"/g,"").trim();
-const optionC = cols[5].replace(/"/g,"").trim();
-const optionD = cols[6].replace(/"/g,"").trim();
-const correct = cols[7].replace(/"/g,"").trim().toUpperCase();
+if(cols.length < 7){
+console.warn("Skipped row:", row);
+continue;
+}
 
-// prevent duplicates
-const snapshot = await getDocs(collection(db,"questions"));
-const exists = snapshot.docs.find(d => d.data().text === question);
-
-if(exists) continue;
+const section = cols[0].trim().toUpperCase();
+const question = cols[1].trim();
+const optionA = cols[2].trim();
+const optionB = cols[3].trim();
+const optionC = cols[4].trim();
+const optionD = cols[5].trim();
+const correct = cols[6].trim().toUpperCase();
 
 await addDoc(collection(db,"questions"),{
-
 section: section,
 text: question,
 optionA: optionA,
@@ -126,7 +127,6 @@ optionB: optionB,
 optionC: optionC,
 optionD: optionD,
 correct: correct
-
 });
 
 count++;
