@@ -36,19 +36,15 @@ let timer;
 let remainingTime = 3600;
 
 let candidatePin = "";
-
 let excelQuestions = [];
 
 
-// ================= SHUFFLE FUNCTION =================
+// ================= SHUFFLE =================
 function shuffle(array){
 
 for(let i=array.length-1;i>0;i--){
-
-const j = Math.floor(Math.random()*(i+1));
-
-[array[i],array[j]] = [array[j],array[i]];
-
+const j=Math.floor(Math.random()*(i+1));
+[array[i],array[j]]=[array[j],array[i]];
 }
 
 return array;
@@ -59,18 +55,12 @@ return array;
 // ================= ADMIN LOGIN =================
 function adminLogin(){
 
-const pass = document.getElementById("adminPass").value.trim();
-const name = document.getElementById("adminName").value.trim();
+const pass=document.getElementById("adminPass").value.trim();
+const name=document.getElementById("adminName").value.trim();
 
-if(!name){
-alert("Enter your name");
-return;
-}
+if(!name){ alert("Enter your name"); return; }
 
-if(pass !== "admin123"){
-alert("Wrong password");
-return;
-}
+if(pass!=="admin123"){ alert("Wrong password"); return; }
 
 document.getElementById("loginBox").classList.add("hidden");
 document.getElementById("adminPanel").classList.remove("hidden");
@@ -80,27 +70,24 @@ loadAnalytics();
 }
 
 
-// ================= PIN MANAGEMENT =================
+// ================= PIN =================
 function generatePIN(){
 
-const pin = Math.floor(100000 + Math.random()*900000).toString();
+const pin=Math.floor(100000+Math.random()*900000).toString();
 
-document.getElementById("newPin").value = pin;
+document.getElementById("newPin").value=pin;
 
 }
 
 
 async function savePIN(){
 
-const pin = document.getElementById("newPin").value.trim();
+const pin=document.getElementById("newPin").value.trim();
 
-if(!pin){
-alert("Generate PIN first");
-return;
-}
+if(!pin){ alert("Generate PIN first"); return; }
 
 await setDoc(doc(db,"system","masterCode"),{
-activeCode: pin,
+activeCode:pin,
 createdAt:new Date()
 });
 
@@ -112,37 +99,29 @@ alert("PIN saved successfully");
 // ================= EXCEL PREVIEW =================
 function previewExcel(){
 
-const file = document.getElementById("excelFile").files[0];
+const file=document.getElementById("excelFile").files[0];
 
-if(!file){
-alert("Select Excel file");
-return;
-}
+if(!file){ alert("Select Excel file"); return; }
 
-const reader = new FileReader();
+const reader=new FileReader();
 
-reader.onload = function(e){
+reader.onload=function(e){
 
-const data = new Uint8Array(e.target.result);
+const data=new Uint8Array(e.target.result);
+const workbook=XLSX.read(data,{type:"array"});
+const sheet=workbook.Sheets[workbook.SheetNames[0]];
+const rows=XLSX.utils.sheet_to_json(sheet,{header:1});
 
-const workbook = XLSX.read(data,{type:"array"});
+excelQuestions=[];
 
-const sheet = workbook.Sheets[workbook.SheetNames[0]];
-
-const rows = XLSX.utils.sheet_to_json(sheet,{header:1});
-
-excelQuestions = [];
-
-let html = "<table border='1' style='width:100%;margin-top:10px'>";
+let html="<table border='1' style='width:100%;margin-top:10px'>";
 
 for(let i=1;i<rows.length;i++){
 
-const r = rows[i];
-
+const r=rows[i];
 if(!r[1]) continue;
 
-const q = {
-
+const q={
 section:String(r[0]).trim().toUpperCase(),
 text:String(r[1]).trim(),
 optionA:String(r[2]).trim(),
@@ -150,26 +129,23 @@ optionB:String(r[3]).trim(),
 optionC:String(r[4]).trim(),
 optionD:String(r[5]).trim(),
 correct:String(r[6]).trim().toUpperCase()
-
 };
 
 excelQuestions.push(q);
 
-html += `
-<tr>
+html+=`<tr>
 <td>${q.section}</td>
 <td>${q.text}</td>
 <td>${q.correct}</td>
-</tr>
-`;
+</tr>`;
 
 }
 
-html += "</table>";
+html+="</table>";
 
-document.getElementById("excelPreview").innerHTML = html;
+document.getElementById("excelPreview").innerHTML=html;
 
-alert(excelQuestions.length + " questions loaded");
+alert(excelQuestions.length+" questions loaded");
 
 };
 
@@ -181,34 +157,27 @@ reader.readAsArrayBuffer(file);
 // ================= UPLOAD QUESTIONS =================
 async function uploadExcel(){
 
-if(excelQuestions.length === 0){
+if(excelQuestions.length===0){
 alert("Preview Excel first");
 return;
 }
 
-let count = 0;
+let count=0;
 
-const existing = await getDocs(collection(db,"questions"));
-
-const existingTexts = existing.docs.map(d=>d.data().text);
+const existing=await getDocs(collection(db,"questions"));
+const existingTexts=existing.docs.map(d=>d.data().text);
 
 for(const q of excelQuestions){
 
-if(existingTexts.includes(q.text)){
-console.log("Duplicate skipped:",q.text);
-continue;
-}
+if(existingTexts.includes(q.text)) continue;
 
 await addDoc(collection(db,"questions"),q);
-
 count++;
 
 }
 
-document.getElementById("uploadStatus").innerText =
-count + " questions uploaded";
-
-alert(count + " questions uploaded successfully");
+document.getElementById("uploadStatus").innerText=count+" questions uploaded";
+alert(count+" questions uploaded successfully");
 
 }
 
@@ -216,25 +185,17 @@ alert(count + " questions uploaded successfully");
 // ================= LOAD QUESTIONS =================
 async function loadQuestions(){
 
-const snapshot = await getDocs(collection(db,"questions"));
+const snapshot=await getDocs(collection(db,"questions"));
 
-questions = snapshot.docs.map(d=>d.data());
+questions=snapshot.docs.map(d=>d.data());
 
-sectionA = shuffle(questions.filter(q=>q.section==="A"));
-sectionB = shuffle(questions.filter(q=>q.section==="B"));
+sectionA=shuffle(questions.filter(q=>q.section==="A"));
+sectionB=shuffle(questions.filter(q=>q.section==="B"));
 
-currentSection = "A";
-currentQuestion = 0;
+currentSection="A";
+currentQuestion=0;
 
 showQuestion();
-
-}
-
-
-// ================= GET CURRENT LIST =================
-function getCurrentList(){
-
-return currentSection==="A" ? sectionA : sectionB;
 
 }
 
@@ -242,126 +203,42 @@ return currentSection==="A" ? sectionA : sectionB;
 // ================= SHOW QUESTION =================
 function showQuestion(){
 
-const list = getCurrentList();
+const list=currentSection==="A"?sectionA:sectionB;
 
-if(list.length === 0){
-
-document.getElementById("question").innerText =
-"No questions found for Section " + currentSection;
-
+if(list.length===0){
+document.getElementById("question").innerText="No questions found";
 return;
-
 }
 
-const q = list[currentQuestion];
+const q=list[currentQuestion];
 
-document.getElementById("question").innerText = q.text;
+document.getElementById("question").innerText=q.text;
 
-
-// RANDOMIZE OPTIONS
-const options = [
-
-{key:"A", text:q.optionA},
-{key:"B", text:q.optionB},
-{key:"C", text:q.optionC},
-{key:"D", text:q.optionD}
-
+const options=[
+{key:"A",text:q.optionA},
+{key:"B",text:q.optionB},
+{key:"C",text:q.optionC},
+{key:"D",text:q.optionD}
 ];
 
 shuffle(options);
 
-let html = "";
+let html="";
 
 options.forEach(opt=>{
-
-html += `
+html+=`
 <div class="option">
 <label>
 <input type="radio" name="opt" value="${opt.key}">
 ${opt.text}
 </label>
-</div>
-`;
-
+</div>`;
 });
 
-document.getElementById("options").innerHTML = html;
+document.getElementById("options").innerHTML=html;
 
-document.getElementById("progress").innerText =
+document.getElementById("progress").innerText=
 `Section ${currentSection} • Question ${currentQuestion+1} of ${list.length}`;
-
-if(answers[currentSection+"_"+currentQuestion]){
-
-document.querySelector(
-`input[value="${answers[currentSection+"_"+currentQuestion]}"]`
-).checked = true;
-
-}
-
-}
-
-
-// ================= SAVE ANSWER =================
-function saveAnswer(){
-
-const selected = document.querySelector('input[name="opt"]:checked');
-
-if(selected){
-
-answers[currentSection+"_"+currentQuestion] = selected.value;
-
-}
-
-}
-
-
-// ================= NEXT =================
-function nextQuestion(){
-
-saveAnswer();
-
-const list = getCurrentList();
-
-if(currentQuestion < list.length-1){
-
-currentQuestion++;
-
-showQuestion();
-
-}else{
-
-if(currentSection === "A"){
-
-alert("Section A completed. Starting Section B.");
-
-currentSection = "B";
-currentQuestion = 0;
-
-showQuestion();
-
-}else{
-
-submitExam();
-
-}
-
-}
-
-}
-
-
-// ================= PREVIOUS =================
-function prevQuestion(){
-
-saveAnswer();
-
-if(currentQuestion > 0){
-
-currentQuestion--;
-
-showQuestion();
-
-}
 
 }
 
@@ -371,21 +248,19 @@ function startTimer(){
 
 clearInterval(timer);
 
-timer = setInterval(()=>{
+timer=setInterval(()=>{
 
 remainingTime--;
 
-const mins = Math.floor(remainingTime/60);
-const secs = remainingTime % 60;
+const mins=Math.floor(remainingTime/60);
+const secs=remainingTime%60;
 
-document.getElementById("timer").innerText =
+document.getElementById("timer").innerText=
 `${mins}:${secs.toString().padStart(2,"0")}`;
 
-if(remainingTime <= 0){
-
+if(remainingTime<=0){
 clearInterval(timer);
 submitExam();
-
 }
 
 },1000);
@@ -396,32 +271,22 @@ submitExam();
 // ================= START TEST =================
 async function startTest(){
 
-const pin = document.getElementById("pinCode").value.trim();
+const pin=document.getElementById("pinCode").value.trim();
 
-if(!pin){
-alert("Enter PIN");
-return;
-}
+if(!pin){ alert("Enter PIN"); return; }
 
-const snap = await getDoc(doc(db,"system","masterCode"));
+const snap=await getDoc(doc(db,"system","masterCode"));
 
-if(!snap.exists()){
-alert("System error");
-return;
-}
+if(!snap.exists()){ alert("System error"); return; }
 
-if(pin !== snap.data().activeCode){
-alert("Invalid PIN");
-return;
-}
+if(pin!==snap.data().activeCode){ alert("Invalid PIN"); return; }
 
-candidatePin = pin;
+candidatePin=pin;
 
 document.getElementById("candidateForm").classList.add("hidden");
 document.getElementById("quiz").classList.remove("hidden");
 
 await loadQuestions();
-
 startTimer();
 
 }
@@ -430,15 +295,10 @@ startTimer();
 // ================= SCORE =================
 function calculateScore(){
 
-let score = 0;
+let score=0;
 
-sectionA.forEach((q,i)=>{
-if(answers["A_"+i] === q.correct) score++;
-});
-
-sectionB.forEach((q,i)=>{
-if(answers["B_"+i] === q.correct) score++;
-});
+sectionA.forEach((q,i)=>{ if(answers["A_"+i]===q.correct) score++; });
+sectionB.forEach((q,i)=>{ if(answers["B_"+i]===q.correct) score++; });
 
 return score;
 
@@ -450,82 +310,61 @@ async function submitExam(){
 
 clearInterval(timer);
 
-const total = sectionA.length + sectionB.length;
-
-const score = calculateScore();
+const total=sectionA.length+sectionB.length;
+const score=calculateScore();
 
 await addDoc(collection(db,"results"),{
-
 pin:candidatePin,
 score:score,
 total:total,
 submittedAt:new Date()
-
 });
 
 document.getElementById("quiz").classList.add("hidden");
 document.getElementById("result").classList.remove("hidden");
 
-document.getElementById("scoreText").innerText =
+document.getElementById("scoreText").innerText=
 `You scored ${score} out of ${total}`;
 
 }
 
 
-// ================= ANALYTICS =================
+// ================= ADMIN ANALYTICS =================
 async function loadAnalytics(){
 
-const snapshot = await getDocs(collection(db,"results"));
+const snapshot=await getDocs(collection(db,"results"));
+const results=snapshot.docs.map(d=>d.data());
 
-const results = snapshot.docs.map(d=>d.data());
+if(results.length===0) return;
 
-if(results.length === 0) return;
+const scores=results.map(r=>r.score);
+const totals=results.map(r=>r.total);
 
-const scores = results.map(r=>r.score);
+const avg=scores.reduce((a,b)=>a+b,0)/scores.length;
 
-const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
+const passCount=scores.filter((s,i)=>s/totals[i]>=0.5).length;
 
-document.getElementById("totalCandidates").innerText = results.length;
-document.getElementById("avgScore").innerText = avg.toFixed(1);
-document.getElementById("highScore").innerText = Math.max(...scores);
-document.getElementById("lowScore").innerText = Math.min(...scores);
+const passRate=((passCount/results.length)*100).toFixed(1)+"%";
 
-document.getElementById("passCount").innerText =
-scores.filter(s=>s>=50).length;
+document.getElementById("totalCandidates").innerText=results.length;
+document.getElementById("avgScore").innerText=avg.toFixed(1);
+document.getElementById("passCount").innerText=passCount;
+document.getElementById("failCount").innerText=results.length-passCount;
 
-document.getElementById("failCount").innerText =
-scores.filter(s=>s<50).length;
-
-}
+document.getElementById("passRate").innerText=passRate;
 
 
-// ================= DOWNLOAD ADMIN LOG =================
-async function downloadAuditLog(){
+// TOP 5
+const sorted=[...results].sort((a,b)=>b.score-a.score).slice(0,5);
 
-const snapshot = await getDocs(collection(db,"codeArchive"));
+let topHTML="";
 
-let csv = "Code,CreatedAt,ExpiredAt,CreatedBy\n";
-
-snapshot.forEach(docu=>{
-
-const d = docu.data();
-
-csv += `${d.code || ""},${d.createdAt || ""},${d.expiredAt || ""},${d.createdBy || ""}\n`;
-
+sorted.forEach(r=>{
+topHTML+=`<li>${r.pin} - ${r.score}/${r.total}</li>`;
 });
 
-const blob = new Blob([csv],{type:"text/csv"});
-
-const link = document.createElement("a");
-
-link.href = URL.createObjectURL(blob);
-link.download = "admin_activity_log.csv";
-
-document.body.appendChild(link);
-
-link.click();
-
-document.body.removeChild(link);
+const topBox=document.getElementById("topCandidates");
+if(topBox) topBox.innerHTML=topHTML;
 
 }
 
@@ -533,29 +372,90 @@ document.body.removeChild(link);
 // ================= DOWNLOAD RESULTS =================
 async function exportResults(){
 
-const snapshot = await getDocs(collection(db,"results"));
+const snapshot=await getDocs(collection(db,"results"));
 
-let csv = "PIN,Score,Total,SubmittedAt\n";
+let csv="PIN,Score,Total,SubmittedAt,%Achieved,Status\n";
 
 snapshot.forEach(docu=>{
 
-const d = docu.data();
+const d=docu.data();
 
-csv += `${d.pin || ""},${d.score || ""},${d.total || ""},${d.submittedAt || ""}\n`;
+let date="";
+if(d.submittedAt){
+date=new Date(d.submittedAt.seconds*1000)
+.toISOString()
+.replace("T"," ")
+.substring(0,19);
+}
+
+let percent=0;
+if(d.total>0){
+percent=Math.round((d.score/d.total)*100);
+}
+
+let status=percent>=50?"PASS":"FAIL";
+
+csv+=`${d.pin},${d.score},${d.total},${date},${percent}%,${status}\n`;
 
 });
 
-const blob = new Blob([csv],{type:"text/csv"});
+const blob=new Blob([csv],{type:"text/csv"});
+const link=document.createElement("a");
 
-const link = document.createElement("a");
-
-link.href = URL.createObjectURL(blob);
-link.download = "cbt_results.csv";
+link.href=URL.createObjectURL(blob);
+link.download="cbt_results.csv";
 
 document.body.appendChild(link);
-
 link.click();
+document.body.removeChild(link);
 
+}
+
+
+// ================= DOWNLOAD ADMIN LOG =================
+async function downloadAuditLog(){
+
+const snapshot=await getDocs(collection(db,"codeArchive"));
+
+let csv="Code,CreatedAt,ExpiredAt,CreatedBy,TimesUsed\n";
+
+for(const docu of snapshot.docs){
+
+const d=docu.data();
+
+let created="";
+let expired="";
+
+if(d.createdAt){
+created=new Date(d.createdAt.seconds*1000)
+.toISOString().replace("T"," ").substring(0,19);
+}
+
+if(d.expiredAt){
+expired=new Date(d.expiredAt.seconds*1000)
+.toISOString().replace("T"," ").substring(0,19);
+}
+
+// PIN usage counter
+const results=await getDocs(collection(db,"results"));
+let usage=0;
+
+results.forEach(r=>{
+if(r.data().pin===d.code) usage++;
+});
+
+csv+=`${d.code},${created},${expired},${d.createdBy},${usage}\n`;
+
+}
+
+const blob=new Blob([csv],{type:"text/csv"});
+const link=document.createElement("a");
+
+link.href=URL.createObjectURL(blob);
+link.download="admin_activity_log.csv";
+
+document.body.appendChild(link);
+link.click();
 document.body.removeChild(link);
 
 }
@@ -564,54 +464,24 @@ document.body.removeChild(link);
 // ================= EVENTS =================
 document.addEventListener("DOMContentLoaded",()=>{
 
-const loginBtn = document.getElementById("loginBtn");
+const loginBtn=document.getElementById("loginBtn");
 
 if(loginBtn){
 
-loginBtn.onclick = adminLogin;
+loginBtn.onclick=adminLogin;
 
-document.getElementById("generatePinBtn").onclick = generatePIN;
-document.getElementById("savePinBtn").onclick = savePIN;
+document.getElementById("generatePinBtn").onclick=generatePIN;
+document.getElementById("savePinBtn").onclick=savePIN;
 
-document.getElementById("previewExcelBtn").onclick = previewExcel;
-document.getElementById("uploadExcelBtn").onclick = uploadExcel;
-
-}
-
-
-// DOWNLOAD BUTTONS
-const auditBtn = document.getElementById("downloadAuditBtn");
-if(auditBtn) auditBtn.onclick = downloadAuditLog;
-
-const exportBtn = document.getElementById("exportBtn");
-if(exportBtn) exportBtn.onclick = exportResults;
-
-
-// CANDIDATE PAGE
-const startBtn = document.getElementById("startBtn");
-
-if(startBtn){
-
-const agree = document.getElementById("agreeCheck");
-
-agree.addEventListener("change",()=>{
-startBtn.disabled = !agree.checked;
-});
-
-startBtn.onclick = startTest;
-
-document.getElementById("nextBtn").onclick = nextQuestion;
-document.getElementById("prevBtn").onclick = prevQuestion;
-document.getElementById("submitBtn").onclick = submitExam;
+document.getElementById("previewExcelBtn").onclick=previewExcel;
+document.getElementById("uploadExcelBtn").onclick=uploadExcel;
 
 }
 
+const auditBtn=document.getElementById("downloadAuditBtn");
+if(auditBtn) auditBtn.onclick=downloadAuditLog;
 
-// RESTART
-const restartBtn = document.getElementById("restartBtn");
-
-if(restartBtn){
-restartBtn.onclick = ()=>location.reload();
-}
+const exportBtn=document.getElementById("exportBtn");
+if(exportBtn) exportBtn.onclick=exportResults;
 
 });
