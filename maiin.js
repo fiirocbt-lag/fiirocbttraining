@@ -1,4 +1,4 @@
-// ================= FIREBASE =================
+// ================= FIREBASE SETUP =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import {
   getFirestore,
@@ -31,17 +31,17 @@ let remainingTime = 3600;
 let candidatePin = "";
 
 // ================= ADMIN LOGIN =================
-function adminLogin() {
+function adminLogin(){
 
   const pass = document.getElementById("adminPass").value.trim();
   const name = document.getElementById("adminName").value.trim();
 
-  if (!name) {
+  if(!name){
     alert("Enter name");
     return;
   }
 
-  if (pass !== "admin123") {
+  if(pass !== "admin123"){
     alert("Wrong password");
     return;
   }
@@ -49,13 +49,13 @@ function adminLogin() {
   document.getElementById("loginBox").classList.add("hidden");
   document.getElementById("adminPanel").classList.remove("hidden");
 
+  loadAnalytics();
 }
 
 // ================= GENERATE PIN =================
-function generatePIN() {
+function generatePIN(){
 
   const pin = Math.floor(100000 + Math.random()*900000).toString();
-
   document.getElementById("newPin").value = pin;
 }
 
@@ -74,8 +74,7 @@ async function savePIN(){
     createdAt: new Date()
   });
 
-  alert("PIN saved");
-
+  alert("PIN saved successfully");
 }
 
 // ================= CSV QUESTION UPLOAD =================
@@ -91,20 +90,116 @@ async function uploadCSV(file){
     if(cols.length < 6) continue;
 
     await addDoc(collection(db,"questions"),{
-
       text: cols[0],
       optionA: cols[1],
       optionB: cols[2],
       optionC: cols[3],
       optionD: cols[4],
       correct: cols[5].trim()
-
     });
 
   }
 
   alert("Questions uploaded successfully");
+}
 
+// ================= LOAD QUESTIONS =================
+async function loadQuestions(){
+
+  const snapshot = await getDocs(collection(db,"questions"));
+
+  if(snapshot.empty){
+    document.getElementById("question").innerText =
+    "No questions available.";
+    return;
+  }
+
+  questions = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+
+  // randomize questions
+  questions = questions.sort(()=>Math.random()-0.5);
+
+  currentQuestion = 0;
+
+  showQuestion();
+}
+
+// ================= SHOW QUESTION =================
+function showQuestion(){
+
+  const q = questions[currentQuestion];
+
+  document.getElementById("question").innerText = q.text;
+
+  const html = `
+  <label><input type="radio" name="opt" value="A"> ${q.optionA}</label><br>
+  <label><input type="radio" name="opt" value="B"> ${q.optionB}</label><br>
+  <label><input type="radio" name="opt" value="C"> ${q.optionC}</label><br>
+  <label><input type="radio" name="opt" value="D"> ${q.optionD}</label>
+  `;
+
+  document.getElementById("options").innerHTML = html;
+
+  document.getElementById("progress").innerText =
+  `Question ${currentQuestion+1} of ${questions.length}`;
+}
+
+// ================= SAVE ANSWER =================
+function saveAnswer(){
+
+  const selected = document.querySelector('input[name="opt"]:checked');
+
+  if(selected){
+    answers[currentQuestion] = selected.value;
+  }
+}
+
+// ================= NEXT QUESTION =================
+function nextQuestion(){
+
+  saveAnswer();
+
+  if(currentQuestion < questions.length-1){
+    currentQuestion++;
+    showQuestion();
+  }
+}
+
+// ================= PREVIOUS QUESTION =================
+function prevQuestion(){
+
+  saveAnswer();
+
+  if(currentQuestion > 0){
+    currentQuestion--;
+    showQuestion();
+  }
+}
+
+// ================= TIMER =================
+function startTimer(){
+
+  clearInterval(timer);
+
+  timer = setInterval(()=>{
+
+    remainingTime--;
+
+    const mins = Math.floor(remainingTime/60);
+    const secs = remainingTime%60;
+
+    document.getElementById("timer").innerText =
+    `${mins}:${secs.toString().padStart(2,"0")}`;
+
+    if(remainingTime <= 0){
+      clearInterval(timer);
+      submitExam();
+    }
+
+  },1000);
 }
 
 // ================= START TEST =================
@@ -141,108 +236,6 @@ async function startTest(){
   startTimer();
 }
 
-// ================= LOAD QUESTIONS =================
-async function loadQuestions(){
-
-  const snapshot = await getDocs(collection(db,"questions"));
-
-  if(snapshot.empty){
-    document.getElementById("question").innerText="No questions available";
-    return;
-  }
-
-  questions = snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-
-  questions = questions.sort(()=>Math.random()-0.5);
-
-  currentQuestion = 0;
-
-  showQuestion();
-}
-
-// ================= SHOW QUESTION =================
-function showQuestion(){
-
-  const q = questions[currentQuestion];
-
-  document.getElementById("question").innerText = q.text;
-
-  const html = `
-  <label><input type="radio" name="opt" value="A"> ${q.optionA}</label><br>
-  <label><input type="radio" name="opt" value="B"> ${q.optionB}</label><br>
-  <label><input type="radio" name="opt" value="C"> ${q.optionC}</label><br>
-  <label><input type="radio" name="opt" value="D"> ${q.optionD}</label>
-  `;
-
-  document.getElementById("options").innerHTML = html;
-
-  document.getElementById("progress").innerText =
-  `Question ${currentQuestion+1} of ${questions.length}`;
-
-}
-
-// ================= SAVE ANSWER =================
-function saveAnswer(){
-
-  const selected = document.querySelector('input[name="opt"]:checked');
-
-  if(selected){
-    answers[currentQuestion] = selected.value;
-  }
-
-}
-
-// ================= NEXT =================
-function nextQuestion(){
-
-  saveAnswer();
-
-  if(currentQuestion < questions.length-1){
-    currentQuestion++;
-    showQuestion();
-  }
-
-}
-
-// ================= PREVIOUS =================
-function prevQuestion(){
-
-  saveAnswer();
-
-  if(currentQuestion > 0){
-    currentQuestion--;
-    showQuestion();
-  }
-
-}
-
-// ================= TIMER =================
-function startTimer(){
-
-  clearInterval(timer);
-
-  timer = setInterval(()=>{
-
-    remainingTime--;
-
-    const mins = Math.floor(remainingTime/60);
-    const secs = remainingTime%60;
-
-    document.getElementById("timer").innerText =
-    `${mins}:${secs.toString().padStart(2,"0")}`;
-
-    if(remainingTime <= 0){
-      clearInterval(timer);
-      submitExam();
-    }
-
-  },1000);
-
-}
-
 // ================= SCORE =================
 function calculateScore(){
 
@@ -255,10 +248,9 @@ function calculateScore(){
   });
 
   return score;
-
 }
 
-// ================= SUBMIT =================
+// ================= SUBMIT EXAM =================
 async function submitExam(){
 
   clearInterval(timer);
@@ -266,12 +258,10 @@ async function submitExam(){
   const score = calculateScore();
 
   await addDoc(collection(db,"results"),{
-
     score: score,
     total: questions.length,
     pin: candidatePin,
     submittedAt: new Date()
-
   });
 
   document.getElementById("quiz").classList.add("hidden");
@@ -279,49 +269,85 @@ async function submitExam(){
 
   document.getElementById("scoreText").innerText =
   `You scored ${score} out of ${questions.length}`;
+}
 
+// ================= ADMIN ANALYTICS =================
+async function loadAnalytics(){
+
+  const snapshot = await getDocs(collection(db,"results"));
+
+  const results = snapshot.docs.map(doc => doc.data());
+
+  if(results.length === 0) return;
+
+  const scores = results.map(r => r.score);
+
+  const totalCandidates = results.length;
+  const avgScore = scores.reduce((a,b)=>a+b,0) / scores.length;
+  const highScore = Math.max(...scores);
+  const lowScore = Math.min(...scores);
+
+  const passCount = scores.filter(s => s >= 50).length;
+  const failCount = scores.filter(s => s < 50).length;
+
+  document.getElementById("totalCandidates").innerText = totalCandidates;
+  document.getElementById("avgScore").innerText = avgScore.toFixed(1);
+  document.getElementById("highScore").innerText = highScore;
+  document.getElementById("lowScore").innerText = lowScore;
+  document.getElementById("passCount").innerText = passCount;
+  document.getElementById("failCount").innerText = failCount;
 }
 
 // ================= EVENT BINDINGS =================
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded", () => {
 
-  // admin login
+  // ADMIN PAGE
   const loginBtn = document.getElementById("loginBtn");
-  if(loginBtn) loginBtn.onclick = adminLogin;
 
-  const genBtn = document.getElementById("generatePinBtn");
-  if(genBtn) genBtn.onclick = generatePIN;
+  if(loginBtn){
 
-  const saveBtn = document.getElementById("savePinBtn");
-  if(saveBtn) saveBtn.onclick = savePIN;
+    loginBtn.onclick = adminLogin;
 
-  const uploadBtn = document.getElementById("uploadBtn");
-  if(uploadBtn){
-    uploadBtn.onclick = ()=>{
-      const file = document.getElementById("uploadCSV").files[0];
-      if(file) uploadCSV(file);
-      else alert("Select CSV file");
+    const genBtn = document.getElementById("generatePinBtn");
+    if(genBtn) genBtn.onclick = generatePIN;
+
+    const saveBtn = document.getElementById("savePinBtn");
+    if(saveBtn) saveBtn.onclick = savePIN;
+
+    const uploadBtn = document.getElementById("uploadBtn");
+    if(uploadBtn){
+      uploadBtn.onclick = ()=>{
+        const file = document.getElementById("uploadCSV").files[0];
+        if(file) uploadCSV(file);
+        else alert("Select CSV file");
+      };
     }
+
   }
 
-  const agree = document.getElementById("agreeCheck");
+  // CANDIDATE PAGE
   const startBtn = document.getElementById("startBtn");
 
-  if(agree && startBtn){
-    agree.addEventListener("change",()=>{
-      startBtn.disabled = !agree.checked;
-    });
+  if(startBtn){
+
+    const agree = document.getElementById("agreeCheck");
+
+    if(agree){
+      agree.addEventListener("change", ()=>{
+        startBtn.disabled = !agree.checked;
+      });
+    }
+
+    startBtn.onclick = startTest;
+
+    const nextBtn = document.getElementById("nextBtn");
+    if(nextBtn) nextBtn.onclick = nextQuestion;
+
+    const prevBtn = document.getElementById("prevBtn");
+    if(prevBtn) prevBtn.onclick = prevQuestion;
+
+    const submitBtn = document.getElementById("submitBtn");
+    if(submitBtn) submitBtn.onclick = submitExam;
   }
-
-  if(startBtn) startBtn.onclick = startTest;
-
-  const nextBtn = document.getElementById("nextBtn");
-  if(nextBtn) nextBtn.onclick = nextQuestion;
-
-  const prevBtn = document.getElementById("prevBtn");
-  if(prevBtn) prevBtn.onclick = prevQuestion;
-
-  const submitBtn = document.getElementById("submitBtn");
-  if(submitBtn) submitBtn.onclick = submitExam;
 
 });
