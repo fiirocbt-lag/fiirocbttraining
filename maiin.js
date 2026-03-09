@@ -22,233 +22,203 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ================= LOCAL STORAGE (RESULTS ONLY) =================
-const store = {
-  getResults: () => JSON.parse(localStorage.getItem("results") || "[]"),
-  setResults: (r) => localStorage.setItem("results", JSON.stringify(r))
-};
+// ================= GLOBAL STATE =================
+let questions = [];
+let currentQuestion = 0;
+let answers = {};
+let timer = null;
+let remainingTime = 3600;
+let candidatePin = "";
 
-// ================= APP STATE =================
-let state = {
-  remaining: 0,
-  timer: null,
-  staff: null,
-  adminMeta: null
-};
-
-// ================= ADMIN LOGIN =================
-function adminLogin() {
-  const pass = document.getElementById("adminPass").value.trim();
-  const name = document.getElementById("adminName").value.trim();
-
-  if (!name) return alert("Enter name");
-  if (pass !== "admin123") return alert("Wrong password");
-
-  state.adminMeta = { name };
-
-  document.getElementById("loginBox").classList.add("hidden");
-  document.getElementById("adminPanel").classList.remove("hidden");
-
-  loadCurrentPin();
-  showAnalytics();
-}
-
-// ================= LOAD CURRENT PIN =================
-async function loadCurrentPin() {
-  const ref = doc(db, "system", "masterCode");
-  const snap = await getDoc(ref);
-
-  const list = document.getElementById("pinList");
-  if (!list) return;
-
-  if (snap.exists()) {
-    list.innerHTML = `<li>${snap.data().activeCode}</li>`;
-  } else {
-    list.innerHTML = `<li>No Active PIN</li>`;
-  }
-}
-
-// ================= GENERATE PIN =================
-function generatePIN() {
-  const pin = Math.floor(100000 + Math.random() * 900000).toString();
-  document.getElementById("newPin").value = pin;
-}
-
-// ================= SAVE PIN =================
-async function savePIN() {
-  const pin = document.getElementById("newPin").value.trim();
-  if (!pin) return alert("Generate PIN first");
-
-  const ref = doc(db, "system", "masterCode");
-  const snap = await getDoc(ref);
-
-  // Archive old PIN
-  if (snap.exists()) {
-    const old = snap.data();
-    await addDoc(collection(db, "codeArchive"), {
-      code: old.activeCode,
-      createdAt: old.createdAt,
-      expiredAt: new Date(),
-      createdBy: old.createdBy || ""
-    });
-  }
-
-  // Save new PIN
-  await setDoc(ref, {
-    activeCode: pin,
-    createdAt: new Date(),
-    createdBy: state.adminMeta.name
-  });
-
-  alert("New PIN saved. Old PIN expired.");
-  loadCurrentPin();
-}
-
-// ================= CANDIDATE START =================
+// ================= START TEST =================
 async function startTest() {
 
   const pinInput = document.getElementById("pinCode");
-  if (!pinInput) return;
-
   const pin = pinInput.value.trim();
-  if (!pin) return alert("Enter PIN");
+
+  if (!pin) {
+    alert("Enter PIN");
+    return;
+  }
 
   const ref = doc(db, "system", "masterCode");
   const snap = await getDoc(ref);
 
-  if (!snap.exists()) return alert("System error");
-
-  const activePin = String(snap.data().activeCode).trim();
-
-  if (activePin !== pin) {
-    return alert("Invalid or expired PIN.");
+  if (!snap.exists()) {
+    alert("System error");
+    return;
   }
 
-  // PIN VALID
-  state.staff = { pin };
-  state.remaining = 60 * 60;
+  const activePin = snap.data().activeCode;
 
-  const form = document.getElementById("candidateForm");
-  const quiz = document.getElementById("quiz");
+  if (pin !== activePin) {
+    alert("Invalid PIN");
+    return;
+  }
 
-  if (form) form.classList.add("hidden");
-  if (quiz) quiz.classList.remove("hidden");
+  candidatePin = pin;
 
+  document.getElementById("candidateForm").classList.add("hidden");
+  document.getElementById("quiz").classList.remove("hidden");
+
+  await loadQuestions();
   startTimer();
+}
+
+// ================= LOAD QUESTIONS =================
+async function loadQuestions() {
+
+  const snapshot = await getDocs(collection(db, "questions"));
+
+  if (snapshot.empty) {
+    document.getElementById("question").innerText =
+      "No questions available.";
+    return;
+  }
+
+  questions = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+
+  // Randomize question order
+  questions = questions.sort(() => Math.random() - 0.5);
+
+  currentQuestion = 0;
+
+  showQuestion();
+}
+
+// ================= DISPLAY QUESTION =================
+function showQuestion() {
+
+  const q = questions[currentQuestion];
+
+  document.getElementById("question").innerText = q.text;
+
+  const optionsHTML = `
+  <label><input type="radio" name="opt" value="A"> ${q.optionA}</label><br>
+  <label><input type="radio" name="opt" value="B"> ${q.optionB}</label><br>
+  <label><input type="radio" name="opt" value="C"> ${q.optionC}</label><br>
+  <label><input type="radio" name="opt" value="D"> ${q.optionD}</label>
+  `;
+
+  document.getElementById("options").innerHTML = optionsHTML;
+
+  document.getElementById("progress").innerText =
+    `Question ${currentQuestion + 1} of ${questions.length}`;
+}
+
+// ================= SAVE ANSWER =================
+function saveAnswer() {
+
+  const selected = document.querySelector('input[name="opt"]:checked');
+
+  if (selected) {
+    answers[currentQuestion] = selected.value;
+  }
+}
+
+// ================= NEXT QUESTION =================
+function nextQuestion() {
+
+  saveAnswer();
+
+  if (currentQuestion < questions.length - 1) {
+    currentQuestion++;
+    showQuestion();
+  }
+}
+
+// ================= PREVIOUS QUESTION =================
+function prevQuestion() {
+
+  saveAnswer();
+
+  if (currentQuestion > 0) {
+    currentQuestion--;
+    showQuestion();
+  }
 }
 
 // ================= TIMER =================
 function startTimer() {
 
-  clearInterval(state.timer);
+  clearInterval(timer);
 
-  state.timer = setInterval(() => {
+  timer = setInterval(() => {
 
-    state.remaining--;
+    remainingTime--;
 
-    const timerEl = document.getElementById("timer");
+    const mins = Math.floor(remainingTime / 60);
+    const secs = remainingTime % 60;
 
-    if (timerEl) {
-      const mins = Math.floor(state.remaining / 60);
-      const secs = state.remaining % 60;
-      timerEl.textContent = `${mins}:${secs.toString().padStart(2,"0")}`;
-    }
+    document.getElementById("timer").innerText =
+      `${mins}:${secs.toString().padStart(2,"0")}`;
 
-    if (state.remaining <= 0) {
-      clearInterval(state.timer);
-      alert("Time up!");
+    if (remainingTime <= 0) {
+      clearInterval(timer);
+      submitExam();
     }
 
   }, 1000);
 }
 
-// ================= ANALYTICS =================
-function showAnalytics() {
+// ================= CALCULATE SCORE =================
+function calculateScore() {
 
-  const results = store.getResults();
+  let score = 0;
 
-  const total = document.getElementById("totalCandidates");
-  const avgEl = document.getElementById("avgScore");
-
-  if (!total || !avgEl) return;
-
-  const scores = results.map(r => r.score);
-
-  const avg = scores.length
-    ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length)
-    : 0;
-
-  total.textContent = results.length;
-  avgEl.textContent = avg;
-}
-
-// ================= EXPORT RESULTS =================
-function exportResults() {
-
-  const res = store.getResults();
-
-  let csv = "Date,PIN,Score,Grade\n";
-
-  res.forEach(r=>{
-    csv += `${r.date},${r.pin},${r.score},${r.grade}\n`;
+  questions.forEach((q, i) => {
+    if (answers[i] === q.correct) {
+      score++;
+    }
   });
 
-  const blob = new Blob([csv]);
-
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "FIIRO_results.csv";
-  a.click();
+  return score;
 }
 
-// ================= DOWNLOAD PIN ARCHIVE =================
-async function downloadArchive() {
+// ================= SUBMIT EXAM =================
+async function submitExam() {
 
-  const snapshot = await getDocs(collection(db,"codeArchive"));
+  clearInterval(timer);
 
-  let csv = "Code,CreatedAt,ExpiredAt,CreatedBy\n";
+  const score = calculateScore();
 
-  snapshot.forEach(docu=>{
-    const d = docu.data();
-
-    csv += `${d.code},${d.createdAt?.toDate()},${d.expiredAt?.toDate()},${d.createdBy}\n`;
+  await addDoc(collection(db, "results"), {
+    score: score,
+    total: questions.length,
+    pin: candidatePin,
+    submittedAt: new Date()
   });
 
-  const blob = new Blob([csv]);
+  document.getElementById("quiz").classList.add("hidden");
+  document.getElementById("result").classList.remove("hidden");
 
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "PIN_archive.csv";
-  a.click();
+  document.getElementById("scoreText").innerText =
+    `You scored ${score} out of ${questions.length}`;
 }
 
 // ================= EVENT BINDINGS =================
 document.addEventListener("DOMContentLoaded", () => {
 
-  // ADMIN PAGE
-  if (document.getElementById("loginBtn")) {
+  const startBtn = document.getElementById("startBtn");
+  const agree = document.getElementById("agreeCheck");
 
-    document.getElementById("loginBtn").onclick = adminLogin;
-    document.getElementById("generatePinBtn").onclick = generatePIN;
-    document.getElementById("savePinBtn").onclick = savePIN;
-    document.getElementById("exportBtn").onclick = exportResults;
-    document.getElementById("downloadAuditBtn").onclick = downloadArchive;
+  if (agree && startBtn) {
+    agree.addEventListener("change", () => {
+      startBtn.disabled = !agree.checked;
+    });
   }
 
-  // CANDIDATE PAGE
-  if (document.getElementById("startBtn")) {
+  if (startBtn) startBtn.onclick = startTest;
 
-    const startBtn = document.getElementById("startBtn");
-    const agree = document.getElementById("agreeCheck");
+  const nextBtn = document.getElementById("nextBtn");
+  const prevBtn = document.getElementById("prevBtn");
+  const submitBtn = document.getElementById("submitBtn");
 
-    // Enable START only after instructions agreement
-    if (agree && startBtn) {
-      agree.addEventListener("change", () => {
-        startBtn.disabled = !agree.checked;
-      });
-    }
-
-    startBtn.onclick = startTest;
-  }
+  if (nextBtn) nextBtn.onclick = nextQuestion;
+  if (prevBtn) prevBtn.onclick = prevQuestion;
+  if (submitBtn) submitBtn.onclick = submitExam;
 
 });
