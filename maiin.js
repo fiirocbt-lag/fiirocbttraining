@@ -1,4 +1,4 @@
-// ================= FIREBASE SETUP =================
+// ================= FIREBASE =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import {
 getFirestore,
@@ -56,9 +56,10 @@ document.getElementById("loginBox").classList.add("hidden");
 document.getElementById("adminPanel").classList.remove("hidden");
 
 loadAnalytics();
+
 }
 
-// ================= PIN MANAGEMENT =================
+// ================= PIN =================
 function generatePIN(){
 const pin = Math.floor(100000 + Math.random()*900000).toString();
 document.getElementById("newPin").value = pin;
@@ -75,7 +76,7 @@ return;
 
 await setDoc(doc(db,"system","masterCode"),{
 activeCode: pin,
-createdAt: new Date()
+createdAt:new Date()
 });
 
 alert("PIN saved successfully");
@@ -87,59 +88,13 @@ async function uploadCSV(file){
 
 const text = await file.text();
 
-// remove windows carriage returns
 const rows = text.replace(/\r/g,"").split("\n");
 
 let count = 0;
 
 for(let i=1;i<rows.length;i++){
 
-const row = rows[i].trim();
-
-if(!row) continue;
-
-// split simple CSV
-const cols = row.split(",");
-
-if(cols.length < 7) continue;
-
-const section = cols[0].trim().toUpperCase();
-const question = cols[1].trim();
-const optionA = cols[2].trim();
-const optionB = cols[3].trim();
-const optionC = cols[4].trim();
-const optionD = cols[5].trim();
-const correct = cols[6].trim().toUpperCase();
-
-await addDoc(collection(db,"questions"),{
-
-section: section,
-text: question,
-optionA: optionA,
-optionB: optionB,
-optionC: optionC,
-optionD: optionD,
-correct: correct
-
-});
-
-count++;
-
-}
-
-alert(count + " questions uploaded successfully");
-
-}
-
-const text = await file.text();
-
-const rows = text.split("\n");
-
-let count = 0;
-
-for(let i=1;i<rows.length;i++){
-
-let row = rows[i];
+const row = rows[i];
 
 if(!row.trim()) continue;
 
@@ -155,6 +110,12 @@ const optionB = cols[3].replace(/"/g,"").trim();
 const optionC = cols[4].replace(/"/g,"").trim();
 const optionD = cols[5].replace(/"/g,"").trim();
 const correct = cols[6].replace(/"/g,"").trim().toUpperCase();
+
+// prevent duplicates
+const snapshot = await getDocs(collection(db,"questions"));
+const exists = snapshot.docs.find(d => d.data().text === question);
+
+if(exists) continue;
 
 await addDoc(collection(db,"questions"),{
 
@@ -186,77 +147,50 @@ questions = snapshot.docs.map(doc=>doc.data());
 sectionA = questions.filter(q=>q.section==="A");
 sectionB = questions.filter(q=>q.section==="B");
 
-currentSection = "A";
-currentQuestion = 0;
+currentSection="A";
+currentQuestion=0;
 
 showQuestion();
 
 }
 
-// ================= GET CURRENT LIST =================
+// ================= CURRENT LIST =================
 function getCurrentList(){
-
-return currentSection === "A" ? sectionA : sectionB;
-
+return currentSection==="A"?sectionA:sectionB;
 }
 
 // ================= SHOW QUESTION =================
 function showQuestion(){
 
-const list = getCurrentList();
+const list=getCurrentList();
 
-if(list.length === 0){
-
-document.getElementById("question").innerText =
-"No questions found for Section " + currentSection;
-
+if(list.length===0){
+document.getElementById("question").innerText=
+"No questions found for Section "+currentSection;
 return;
 }
 
-const q = list[currentQuestion];
+const q=list[currentQuestion];
 
-document.getElementById("question").innerText = q.text;
+document.getElementById("question").innerText=q.text;
 
-document.getElementById("options").innerHTML = `
+document.getElementById("options").innerHTML=`
 
-<div class="option">
-<label>
-<input type="radio" name="opt" value="A">
-${q.optionA}
-</label>
-</div>
-
-<div class="option">
-<label>
-<input type="radio" name="opt" value="B">
-${q.optionB}
-</label>
-</div>
-
-<div class="option">
-<label>
-<input type="radio" name="opt" value="C">
-${q.optionC}
-</label>
-</div>
-
-<div class="option">
-<label>
-<input type="radio" name="opt" value="D">
-${q.optionD}
-</label>
-</div>
+<div class="option"><label><input type="radio" name="opt" value="A"> ${q.optionA}</label></div>
+<div class="option"><label><input type="radio" name="opt" value="B"> ${q.optionB}</label></div>
+<div class="option"><label><input type="radio" name="opt" value="C"> ${q.optionC}</label></div>
+<div class="option"><label><input type="radio" name="opt" value="D"> ${q.optionD}</label></div>
 
 `;
 
-document.getElementById("progress").innerText =
+document.getElementById("progress").innerText=
 `Section ${currentSection} • Question ${currentQuestion+1} of ${list.length}`;
 
 if(answers[currentSection+"_"+currentQuestion]){
 
 document.querySelector(
 `input[value="${answers[currentSection+"_"+currentQuestion]}"]`
-).checked = true;
+).checked=true;
 
 }
 
@@ -265,43 +199,38 @@ document.querySelector(
 // ================= SAVE ANSWER =================
 function saveAnswer(){
 
-const selected = document.querySelector('input[name="opt"]:checked');
+const selected=document.querySelector('input[name="opt"]:checked');
 
 if(selected){
-
-answers[currentSection+"_"+currentQuestion] = selected.value;
-
+answers[currentSection+"_"+currentQuestion]=selected.value;
 }
 
 }
 
-// ================= NEXT QUESTION =================
+// ================= NEXT =================
 function nextQuestion(){
 
 saveAnswer();
 
-const list = getCurrentList();
+const list=getCurrentList();
 
-if(currentQuestion < list.length-1){
+if(currentQuestion<list.length-1){
 
 currentQuestion++;
-
 showQuestion();
 
-}
-else{
+}else{
 
-if(currentSection === "A"){
+if(currentSection==="A"){
 
 alert("Section A completed. Starting Section B.");
 
-currentSection = "B";
-currentQuestion = 0;
+currentSection="B";
+currentQuestion=0;
 
 showQuestion();
 
-}
-else{
+}else{
 
 submitExam();
 
@@ -311,15 +240,14 @@ submitExam();
 
 }
 
-// ================= PREVIOUS QUESTION =================
+// ================= PREVIOUS =================
 function prevQuestion(){
 
 saveAnswer();
 
-if(currentQuestion > 0){
+if(currentQuestion>0){
 
 currentQuestion--;
-
 showQuestion();
 
 }
@@ -331,20 +259,19 @@ function startTimer(){
 
 clearInterval(timer);
 
-timer = setInterval(()=>{
+timer=setInterval(()=>{
 
 remainingTime--;
 
-const mins = Math.floor(remainingTime/60);
-const secs = remainingTime % 60;
+const mins=Math.floor(remainingTime/60);
+const secs=remainingTime%60;
 
-document.getElementById("timer").innerText =
+document.getElementById("timer").innerText=
 `${mins}:${secs.toString().padStart(2,"0")}`;
 
-if(remainingTime <= 0){
+if(remainingTime<=0){
 
 clearInterval(timer);
-
 submitExam();
 
 }
@@ -356,41 +283,31 @@ submitExam();
 // ================= START TEST =================
 async function startTest(){
 
-const pin = document.getElementById("pinCode").value.trim();
+const pin=document.getElementById("pinCode").value.trim();
 
 if(!pin){
-
 alert("Enter PIN");
-
 return;
-
 }
 
-const snap = await getDoc(doc(db,"system","masterCode"));
+const snap=await getDoc(doc(db,"system","masterCode"));
 
 if(!snap.exists()){
-
 alert("System error");
-
 return;
-
 }
 
-if(pin !== snap.data().activeCode){
-
+if(pin!==snap.data().activeCode){
 alert("Invalid PIN");
-
 return;
-
 }
 
-candidatePin = pin;
+candidatePin=pin;
 
 document.getElementById("candidateForm").classList.add("hidden");
 document.getElementById("quiz").classList.remove("hidden");
 
 await loadQuestions();
-
 startTimer();
 
 }
@@ -398,26 +315,14 @@ startTimer();
 // ================= SCORE =================
 function calculateScore(){
 
-let score = 0;
+let score=0;
 
 sectionA.forEach((q,i)=>{
-
-if(answers["A_"+i] === q.correct){
-
-score++;
-
-}
-
+if(answers["A_"+i]===q.correct) score++;
 });
 
 sectionB.forEach((q,i)=>{
-
-if(answers["B_"+i] === q.correct){
-
-score++;
-
-}
-
+if(answers["B_"+i]===q.correct) score++;
 });
 
 return score;
@@ -429,23 +334,22 @@ async function submitExam(){
 
 clearInterval(timer);
 
-const total = sectionA.length + sectionB.length;
-
-const score = calculateScore();
+const total=sectionA.length+sectionB.length;
+const score=calculateScore();
 
 await addDoc(collection(db,"results"),{
 
-pin: candidatePin,
-score: score,
-total: total,
-submittedAt: new Date()
+pin:candidatePin,
+score:score,
+total:total,
+submittedAt:new Date()
 
 });
 
 document.getElementById("quiz").classList.add("hidden");
 document.getElementById("result").classList.remove("hidden");
 
-document.getElementById("scoreText").innerText =
+document.getElementById("scoreText").innerText=
 `You scored ${score} out of ${total}`;
 
 }
@@ -453,88 +357,74 @@ document.getElementById("scoreText").innerText =
 // ================= ANALYTICS =================
 async function loadAnalytics(){
 
-const snapshot = await getDocs(collection(db,"results"));
+const snapshot=await getDocs(collection(db,"results"));
 
-const results = snapshot.docs.map(d=>d.data());
+const results=snapshot.docs.map(d=>d.data());
 
-if(results.length === 0) return;
+if(results.length===0) return;
 
-const scores = results.map(r=>r.score);
+const scores=results.map(r=>r.score);
 
-const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
+const avg=scores.reduce((a,b)=>a+b,0)/scores.length;
 
-document.getElementById("totalCandidates").innerText = results.length;
-document.getElementById("avgScore").innerText = avg.toFixed(1);
-document.getElementById("highScore").innerText = Math.max(...scores);
-document.getElementById("lowScore").innerText = Math.min(...scores);
+document.getElementById("totalCandidates").innerText=results.length;
+document.getElementById("avgScore").innerText=avg.toFixed(1);
+document.getElementById("highScore").innerText=Math.max(...scores);
+document.getElementById("lowScore").innerText=Math.min(...scores);
 
-document.getElementById("passCount").innerText =
+document.getElementById("passCount").innerText=
 scores.filter(s=>s>=50).length;
 
-document.getElementById("failCount").innerText =
+document.getElementById("failCount").innerText=
 scores.filter(s=>s<50).length;
 
 }
 
-// ================= EVENT BINDINGS =================
+// ================= EVENTS =================
 document.addEventListener("DOMContentLoaded",()=>{
 
-const loginBtn = document.getElementById("loginBtn");
+const loginBtn=document.getElementById("loginBtn");
 
 if(loginBtn){
 
-loginBtn.onclick = adminLogin;
+loginBtn.onclick=adminLogin;
 
-document.getElementById("generatePinBtn").onclick = generatePIN;
-document.getElementById("savePinBtn").onclick = savePIN;
+document.getElementById("generatePinBtn").onclick=generatePIN;
+document.getElementById("savePinBtn").onclick=savePIN;
 
-document.getElementById("uploadBtn").onclick = ()=>{
+document.getElementById("uploadBtn").onclick=()=>{
 
-const file = document.getElementById("uploadCSV").files[0];
+const file=document.getElementById("uploadCSV").files[0];
 
-if(file){
-
-uploadCSV(file);
-
-}
-else{
-
-alert("Select CSV file");
-
-}
+if(file) uploadCSV(file);
+else alert("Select CSV file");
 
 };
 
 }
 
-// CANDIDATE PAGE
-const startBtn = document.getElementById("startBtn");
+const startBtn=document.getElementById("startBtn");
 
 if(startBtn){
 
-const agree = document.getElementById("agreeCheck");
+const agree=document.getElementById("agreeCheck");
 
 agree.addEventListener("change",()=>{
-
-startBtn.disabled = !agree.checked;
-
+startBtn.disabled=!agree.checked;
 });
 
-startBtn.onclick = startTest;
+startBtn.onclick=startTest;
 
-document.getElementById("nextBtn").onclick = nextQuestion;
-document.getElementById("prevBtn").onclick = prevQuestion;
-document.getElementById("submitBtn").onclick = submitExam;
+document.getElementById("nextBtn").onclick=nextQuestion;
+document.getElementById("prevBtn").onclick=prevQuestion;
+document.getElementById("submitBtn").onclick=submitExam;
 
 }
 
-// RESTART
-const restartBtn = document.getElementById("restartBtn");
+const restartBtn=document.getElementById("restartBtn");
 
 if(restartBtn){
-
-restartBtn.onclick = ()=>location.reload();
-
+restartBtn.onclick=()=>location.reload();
 }
 
 });
