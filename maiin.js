@@ -68,7 +68,13 @@ async function adminLogin() {
   const statusEl = document.getElementById("loginStatus");
 
   if (!name) { showStatus(statusEl, "Enter your name", "error"); return; }
-  if (pass !== "admin123") { showStatus(statusEl, "Wrong password", "error"); return; }
+  if (!pass) { showStatus(statusEl, "Enter your password", "error"); return; }
+
+  // Check password from Firestore (falls back to "admin123" if not yet set)
+  const pwSnap = await getDoc(doc(db, "system", "adminPassword"));
+  const storedPassword = pwSnap.exists() ? pwSnap.data().password : "admin123";
+
+  if (pass !== storedPassword) { showStatus(statusEl, "❌ Wrong password", "error"); return; }
 
   currentAdminName = name;
   currentAdminStaffID = staffID || "N/A";
@@ -185,7 +191,8 @@ async function loadAuditTable() {
       PIN_GENERATED: "🔑 PIN Generated",
       QUESTIONS_UPLOADED: "📤 Questions Uploaded",
       RESULTS_EXPORTED: "📊 Results Exported",
-      AUDIT_EXPORTED: "🗂 Audit Log Exported"
+      AUDIT_EXPORTED: "🗂 Audit Log Exported",
+      PASSWORD_CHANGED: "🔒 Password Changed"
     };
 
     tableBody.innerHTML = logs.map(log => {
@@ -211,7 +218,8 @@ async function loadAuditTable() {
         PIN_GENERATED: "badge-pin",
         QUESTIONS_UPLOADED: "badge-upload",
         RESULTS_EXPORTED: "badge-export",
-        AUDIT_EXPORTED: "badge-export"
+        AUDIT_EXPORTED: "badge-export",
+        PASSWORD_CHANGED: "badge-pin"
       }[log.action] || "";
 
       return `<tr>
@@ -508,6 +516,49 @@ function downloadCSV(csv, filename) {
   document.body.removeChild(link);
 }
 
+// ================= CHANGE PASSWORD =================
+async function changePassword() {
+  const currentPw   = document.getElementById("currentPw").value.trim();
+  const newPw       = document.getElementById("newPw").value.trim();
+  const confirmPw   = document.getElementById("confirmPw").value.trim();
+  const statusEl    = document.getElementById("pwChangeStatus");
+
+  if (!currentPw || !newPw || !confirmPw) {
+    showStatus(statusEl, "Please fill in all fields", "error"); return;
+  }
+  if (newPw.length < 6) {
+    showStatus(statusEl, "New password must be at least 6 characters", "error"); return;
+  }
+  if (newPw !== confirmPw) {
+    showStatus(statusEl, "New passwords do not match", "error"); return;
+  }
+
+  // Verify current password against Firestore
+  const pwSnap = await getDoc(doc(db, "system", "adminPassword"));
+  const storedPassword = pwSnap.exists() ? pwSnap.data().password : "admin123";
+
+  if (currentPw !== storedPassword) {
+    showStatus(statusEl, "❌ Current password is incorrect", "error"); return;
+  }
+
+  // Save new password
+  await setDoc(doc(db, "system", "adminPassword"), {
+    password: newPw,
+    updatedAt: new Date(),
+    updatedBy: currentAdminName
+  });
+
+  await logAudit("PASSWORD_CHANGED", { note: "Admin password updated" });
+  await loadAuditTable();
+
+  // Clear fields
+  document.getElementById("currentPw").value = "";
+  document.getElementById("newPw").value = "";
+  document.getElementById("confirmPw").value = "";
+
+  showStatus(statusEl, "✅ Password changed successfully", "success");
+}
+
 
 // ================= EVENTS =================
 document.addEventListener("DOMContentLoaded", () => {
@@ -524,6 +575,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const auditBtn = document.getElementById("downloadAuditBtn");
   if (auditBtn) auditBtn.onclick = downloadAuditLog;
+
+  const changePwBtn = document.getElementById("changePwBtn");
+  if (changePwBtn) changePwBtn.onclick = changePassword;
 
   const startBtn = document.getElementById("startBtn");
   if (startBtn) {
