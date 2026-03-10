@@ -1,129 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-<title>FIIRO CBT Admin Panel</title>
-
-<link rel="stylesheet" href="styles.css" />
-<link rel="icon" href="logo.jpg">
-
-<!-- Excel Reader Library -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FIIRO CBT Admin Panel</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="logo.jpg" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
-
 <body>
 
-<header class="navbar">
-<img src="logo.jpg" class="logo" />
-<h1>FIIRO CBT Admin Panel</h1>
+  <!-- HEADER -->
+  <header class="navbar">
+    <img src="logo.jpg" class="logo" alt="FIIRO Logo" />
+    <h1>FIIRO CBT — Admin Panel</h1>
+    <div class="menu-tab">
+      <a href="index.html" title="Go to Candidate Page">&#9776;</a>
+    </div>
+  </header>
 
-<div class="menu-tab">
-<a href="index.html" title="Go to Candidate Page">&#9776;</a>
-</div>
+  <div class="container">
 
-</header>
+    <!-- ADMIN LOGIN -->
+    <section id="loginBox" class="card">
+      <h2 style="font-family:'Playfair Display',serif; font-size:1.6rem; color:#004d28; margin-bottom:20px;">
+        🔐 Admin Login
+      </h2>
+      <input type="password" id="adminPass" placeholder="Password" />
+      <input type="text" id="adminName" placeholder="Your Full Name" />
+      <input type="text" id="adminStaffID" placeholder="Staff ID (optional)" />
+      <button id="loginBtn" style="margin-top:8px;">Login to Dashboard</button>
+      <p id="loginStatus" class="status"></p>
+    </section>
 
+    <!-- ADMIN DASHBOARD -->
+    <section id="adminPanel" class="card hidden">
 
-<main class="container">
+      <!-- ANALYTICS SUMMARY -->
+      <h2>📊 Analytics Summary</h2>
+      <div class="analytics-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="totalCandidates">0</div>
+          <div class="stat-label">Total Candidates</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="avgScore">0%</div>
+          <div class="stat-label">Average Score</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="highScore">0%</div>
+          <div class="stat-label">Highest Score</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="lowScore">0%</div>
+          <div class="stat-label">Lowest Score</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="passCount">0</div>
+          <div class="stat-label">Passed ✅</div>
+        </div>
+        <div class="stat-card danger-card">
+          <div class="stat-value" id="failCount">0</div>
+          <div class="stat-label">Failed ❌</div>
+        </div>
+      </div>
 
+      <hr class="divider" />
 
-<!-- ADMIN LOGIN -->
-<section id="loginBox" class="card">
+      <!-- QUESTION UPLOAD -->
+      <h2>📤 Upload Questions (Excel)</h2>
+      <p style="font-size:0.9rem; color:#8fa696; margin-bottom:14px; line-height:1.5;">
+        Upload an <strong>.xlsx</strong> file with columns: <code>Section, Question, A, B, C, D, Correct</code>
+      </p>
+      <input type="file" id="excelFile" accept=".xlsx" />
+      <div style="display:flex; gap:10px; margin-top:4px;">
+        <button id="previewExcelBtn" class="secondary" style="flex:1;">👁 Preview</button>
+        <button id="uploadExcelBtn" style="flex:1;">☁️ Upload to Firebase</button>
+      </div>
+      <p id="uploadStatus"></p>
+      <div id="excelPreview"></div>
 
-<h2>Admin Login</h2>
+      <hr class="divider" />
 
-<input type="password" id="adminPass" placeholder="Password" />
+      <!-- PIN MANAGEMENT -->
+      <h2>🔑 PIN Management</h2>
+      <input type="text" id="newPin" placeholder="Generated PIN will appear here" readonly
+             style="letter-spacing:0.15em; font-size:1.2rem; text-align:center;" />
+      <div style="display:flex; gap:10px; margin-top:4px;">
+        <button id="generatePinBtn" class="secondary" style="flex:1;">🎲 Generate PIN</button>
+        <button id="savePinBtn" style="flex:1;">💾 Save PIN</button>
+      </div>
+      <ul id="pinList"></ul>
 
-<input type="text" id="adminName" placeholder="Your Name" />
+      <hr class="divider" />
 
-<input type="text" id="adminStaffID" placeholder="Staff ID (optional)" />
+      <!-- DOWNLOADS -->
+      <h2>📥 Export Data</h2>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button id="exportBtn" style="flex:1; min-width:200px;">📊 Download Results (CSV)</button>
+        <button id="downloadAuditBtn" class="secondary" style="flex:1; min-width:200px;">🗂 Download Audit Log (CSV)</button>
+      </div>
 
-<button id="loginBtn">Login</button>
+    </section>
 
-<p id="loginStatus" class="status"></p>
+  </div>
 
-</section>
-
-
-
-<!-- ADMIN DASHBOARD -->
-<section id="adminPanel" class="card hidden">
-
-
-<!-- QUESTION UPLOAD -->
-
-<h2>Upload Questions (Excel)</h2>
-
-<input type="file" id="excelFile" accept=".xlsx" />
-
-<button id="previewExcelBtn">Preview Excel File</button>
-
-<button id="uploadExcelBtn">Upload Questions to Firebase</button>
-
-<p id="uploadStatus"></p>
-
-<div id="excelPreview"></div>
-
-
-<hr style="margin:30px 0;">
-
-
-<!-- PIN MANAGEMENT -->
-
-<h2>PIN Management</h2>
-
-<input type="text" id="newPin" placeholder="Generate new PIN" readonly />
-
-<button id="generatePinBtn">Generate Random PIN</button>
-
-<button id="savePinBtn">Save PIN</button>
-
-<ul id="pinList"></ul>
-
-
-<hr style="margin:30px 0;">
-
-
-<!-- ANALYTICS -->
-
-<h2>Analytics Summary</h2>
-
-<p><strong>Total Candidates:</strong> <span id="totalCandidates">0</span></p>
-
-<p><strong>Average Score:</strong> <span id="avgScore">0</span>%</p>
-
-<p><strong>Highest Score:</strong> <span id="highScore">0</span>%</p>
-
-<p><strong>Lowest Score:</strong> <span id="lowScore">0</span>%</p>
-
-<p><strong>Passes:</strong> <span id="passCount">0</span></p>
-
-<p><strong>Fails:</strong> <span id="failCount">0</span></p>
-
-
-<hr style="margin:30px 0;">
-
-
-<!-- DOWNLOAD DATA -->
-
-<h2>Integrity / Audit Log</h2>
-
-<button id="downloadAuditBtn">Download Admin Activity Log (CSV)</button>
-
-<button id="exportBtn">Download All Results (CSV)</button>
-
-
-</section>
-
-</main>
-
-
-<!-- MAIN SCRIPT -->
-<script type="module" src="./maiin.js?v=33" defer></script>
-
+  <script type="module" src="./maiin.js?v=33" defer></script>
 </body>
 </html>
