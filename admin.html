@@ -7,10 +7,146 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="icon" href="logo.jpg" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    /* ===== ACTIVE PIN BOX ===== */
+    .active-pin-box {
+      background: linear-gradient(135deg, #003d20, #005c2e);
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .active-pin-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 6px;
+    }
+    .active-pin-number {
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.3em;
+      font-family: monospace;
+      line-height: 1;
+    }
+    .active-pin-meta {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.5);
+      margin-top: 6px;
+    }
+    .pin-active-badge {
+      background: rgba(0,166,81,0.2);
+      border: 1px solid #00a651;
+      color: #5dca8a;
+      padding: 5px 14px;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      white-space: nowrap;
+    }
+
+    /* ===== AUDIT TABLE ===== */
+    .audit-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .audit-count-badge {
+      background: #eef2ef;
+      color: #004d28;
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .audit-table-wrap {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid #dde5df;
+    }
+    .audit-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+      min-width: 640px;
+    }
+    .audit-table th {
+      background: #004d28;
+      color: #fff;
+      padding: 11px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+    .audit-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid #eef2ef;
+      vertical-align: middle;
+      color: #2e4035;
+    }
+    .audit-table tr:last-child td { border-bottom: none; }
+    .audit-table tr:nth-child(even) td { background: #f8faf9; }
+    .audit-table tr:hover td { background: #e6f4ec; }
+
+    /* action badges */
+    .audit-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-login   { background: #e8f4fd; color: #1a6799; }
+    .badge-pin     { background: #fff8e1; color: #7a5500; }
+    .badge-upload  { background: #e8f5e9; color: #2e7d32; }
+    .badge-export  { background: #f3e5f5; color: #6a1b9a; }
+
+    /* empty state */
+    .audit-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: #8fa696;
+    }
+    .audit-empty .audit-empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .audit-empty p { font-size: 0.9rem; }
+
+    /* note box */
+    .firestore-note {
+      background: #fff8e1;
+      border-left: 3px solid #c9a84c;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: #5a4200;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .firestore-note code {
+      background: rgba(0,0,0,0.07);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 0.8rem;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- HEADER -->
   <header class="navbar">
     <img src="logo.jpg" class="logo" alt="FIIRO Logo" />
     <h1>FIIRO CBT — Admin Panel</h1>
@@ -23,7 +159,7 @@
 
     <!-- ADMIN LOGIN -->
     <section id="loginBox" class="card">
-      <h2 style="font-family:'Playfair Display',serif; font-size:1.6rem; color:#004d28; margin-bottom:20px;">
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.6rem;color:#004d28;margin-bottom:20px;">
         🔐 Admin Login
       </h2>
       <input type="password" id="adminPass" placeholder="Password" />
@@ -36,75 +172,106 @@
     <!-- ADMIN DASHBOARD -->
     <section id="adminPanel" class="card hidden">
 
-      <!-- ANALYTICS SUMMARY -->
+      <!-- ANALYTICS -->
       <h2>📊 Analytics Summary</h2>
       <div class="analytics-grid">
-        <div class="stat-card">
-          <div class="stat-value" id="totalCandidates">0</div>
-          <div class="stat-label">Total Candidates</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="avgScore">0%</div>
-          <div class="stat-label">Average Score</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="highScore">0%</div>
-          <div class="stat-label">Highest Score</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="lowScore">0%</div>
-          <div class="stat-label">Lowest Score</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="passCount">0</div>
-          <div class="stat-label">Passed ✅</div>
-        </div>
-        <div class="stat-card danger-card">
-          <div class="stat-value" id="failCount">0</div>
-          <div class="stat-label">Failed ❌</div>
-        </div>
+        <div class="stat-card"><div class="stat-value" id="totalCandidates">0</div><div class="stat-label">Total Candidates</div></div>
+        <div class="stat-card"><div class="stat-value" id="avgScore">0%</div><div class="stat-label">Average Score</div></div>
+        <div class="stat-card"><div class="stat-value" id="highScore">0%</div><div class="stat-label">Highest Score</div></div>
+        <div class="stat-card"><div class="stat-value" id="lowScore">0%</div><div class="stat-label">Lowest Score</div></div>
+        <div class="stat-card"><div class="stat-value" id="passCount">0</div><div class="stat-label">Passed ✅</div></div>
+        <div class="stat-card danger-card"><div class="stat-value" id="failCount">0</div><div class="stat-label">Failed ❌</div></div>
       </div>
 
       <hr class="divider" />
 
       <!-- QUESTION UPLOAD -->
       <h2>📤 Upload Questions (Excel)</h2>
-      <p style="font-size:0.9rem; color:#8fa696; margin-bottom:14px; line-height:1.5;">
+      <p style="font-size:.88rem;color:#8fa696;margin-bottom:12px;line-height:1.5">
         Upload an <strong>.xlsx</strong> file with columns: <code>Section, Question, A, B, C, D, Correct</code>
       </p>
       <input type="file" id="excelFile" accept=".xlsx" />
-      <div style="display:flex; gap:10px; margin-top:4px;">
-        <button id="previewExcelBtn" class="secondary" style="flex:1;">👁 Preview</button>
-        <button id="uploadExcelBtn" style="flex:1;">☁️ Upload to Firebase</button>
+      <div style="display:flex;gap:10px;margin-top:4px;">
+        <button id="previewExcelBtn" class="secondary" style="flex:1">👁 Preview</button>
+        <button id="uploadExcelBtn" style="flex:1">☁️ Upload to Firebase</button>
       </div>
       <p id="uploadStatus"></p>
       <div id="excelPreview"></div>
 
       <hr class="divider" />
 
-      <!-- PIN MANAGEMENT -->
+      <!-- ACTIVE PIN DISPLAY -->
       <h2>🔑 PIN Management</h2>
-      <input type="text" id="newPin" placeholder="Generated PIN will appear here" readonly
-             style="letter-spacing:0.15em; font-size:1.2rem; text-align:center;" />
-      <div style="display:flex; gap:10px; margin-top:4px;">
-        <button id="generatePinBtn" class="secondary" style="flex:1;">🎲 Generate PIN</button>
-        <button id="savePinBtn" style="flex:1;">💾 Save PIN</button>
+
+      <div class="active-pin-box">
+        <div>
+          <div class="active-pin-label">Current Active PIN</div>
+          <div class="active-pin-number" id="activePinDisplay">Loading…</div>
+          <div class="active-pin-meta" id="activePinMeta">Fetching from database…</div>
+        </div>
+        <div class="pin-active-badge">● ACTIVE</div>
       </div>
-      <ul id="pinList"></ul>
+
+      <p style="font-size:.85rem;color:#8fa696;margin-bottom:10px;">
+        Generate a new PIN below. Saving it will <strong>replace</strong> the current one immediately.
+      </p>
+      <input type="text" id="newPin" placeholder="Click 'Generate' to create a new PIN"
+             readonly style="letter-spacing:.2em;font-size:1.2rem;text-align:center;" />
+      <div style="display:flex;gap:10px;margin-top:4px;">
+        <button id="generatePinBtn" class="secondary" style="flex:1">🎲 Generate New PIN</button>
+        <button id="savePinBtn" style="flex:1">💾 Activate &amp; Save PIN</button>
+      </div>
 
       <hr class="divider" />
 
-      <!-- DOWNLOADS -->
+      <!-- EXPORT -->
       <h2>📥 Export Data</h2>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button id="exportBtn" style="flex:1; min-width:200px;">📊 Download Results (CSV)</button>
-        <button id="downloadAuditBtn" class="secondary" style="flex:1; min-width:200px;">🗂 Download Audit Log (CSV)</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button id="exportBtn" style="flex:1;min-width:200px">📊 Download Results (CSV)</button>
+        <button id="downloadAuditBtn" class="secondary" style="flex:1;min-width:200px">🗂 Download Audit Log (CSV)</button>
+      </div>
+
+      <hr class="divider" />
+
+      <!-- AUDIT LOG TABLE -->
+      <div class="audit-header">
+        <h2 style="margin:0;border:none;padding:0">🗂 Integrity / Audit Log</h2>
+        <span class="audit-count-badge"><span id="auditCount">0</span> entries</span>
+      </div>
+
+      <div class="firestore-note">
+        ⚠️ For this table to load, ensure your Firestore rules allow reads on the
+        <code>auditLog</code> collection for authenticated admin sessions.
+        If you see an error below, update your Firebase rules.
+      </div>
+
+      <div class="audit-table-wrap">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Admin Name</th>
+              <th>Staff ID</th>
+              <th>Action</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="auditTableBody">
+            <tr>
+              <td colspan="5">
+                <div class="audit-empty">
+                  <div class="audit-empty-icon">📋</div>
+                  <p>Log will appear here after login</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
     </section>
-
   </div>
 
-  <script type="module" src="./maiin.js?v=33" defer></script>
+  <script type="module" src="./maiin.js?v=34" defer></script>
 </body>
 </html>
