@@ -1,124 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-<title>FIIRO CBT System</title>
-
-<link rel="stylesheet" href="styles.css" />
-<link rel="icon" href="logo.jpg">
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FIIRO CBT System</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="logo.jpg" />
 </head>
-
 <body>
 
+  <!-- HEADER -->
+  <header class="header">
+    <img src="logo.jpg" class="logo" alt="FIIRO Logo" />
+    <h1>Federal Institute of Industrial Research, Oshodi (FIIRO)</h1>
+    <a href="admin.html" class="menu-icon" title="Admin Login">
+      <span></span><span></span><span></span>
+    </a>
+  </header>
 
-<header class="header">
+  <div class="container">
 
-<img src="logo.jpg" class="logo" />
+    <!-- CANDIDATE START PAGE -->
+    <div id="candidateForm">
+      <h2>Welcome, Candidate 👋</h2>
 
-<h1>Federal Institute of Industrial Research, Oshodi (FIIRO)</h1>
+      <div class="notice-banner">
+        ⚠️ This is a CBT simulation platform powered by the ICT Division, FIIRO.
+        It is designed solely for <strong>practice and staff training</strong>.
+      </div>
 
-<a href="admin.html" class="menu-icon" title="Go to Admin Login">
-<span></span>
-<span></span>
-<span></span>
-</a>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-icon">📋</span>
+          <div>
+            <div class="info-label">Sections</div>
+            <div class="info-value">Section A &amp; Section B</div>
+          </div>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">⏱️</span>
+          <div>
+            <div class="info-label">Duration</div>
+            <div class="info-value">60 Minutes</div>
+          </div>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">📖</span>
+          <div>
+            <div class="info-label">Section A</div>
+            <div class="info-value">Current Affairs</div>
+          </div>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">📜</span>
+          <div>
+            <div class="info-label">Section B</div>
+            <div class="info-value">Public Service Rules (PSR)</div>
+          </div>
+        </div>
+      </div>
 
-</header>
+      <p style="font-size:0.95rem; color:#2e4035; margin-bottom:16px; line-height:1.6;">
+        Please attempt <strong>ALL</strong> questions. Read each question carefully before selecting your answer.
+        Once the timer expires, your exam will be submitted automatically.
+      </p>
 
+      <label class="agree-row" for="agreeCheck">
+        <input type="checkbox" id="agreeCheck" />
+        <span>I have read and understood the instructions above</span>
+      </label>
 
+      <input id="pinCode" type="text" placeholder="Enter your PIN Code" maxlength="6" autocomplete="off" />
 
-<div class="container watermark-bg">
+      <button id="startBtn" disabled style="margin-top:8px;">
+        🚀 START EXAM
+      </button>
+    </div>
 
+    <!-- QUIZ -->
+    <div id="quiz" class="hidden">
+      <div class="topbar">
+        <div class="progress-info">
+          <span id="progress">Section A • Question 1</span>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="timer-wrap">
+          <span>⏱️</span>
+          <span id="timer">60:00</span>
+        </div>
+      </div>
 
-<!-- CANDIDATE START PAGE -->
+      <div class="question-card">
+        <div class="question-number" id="questionNumber">Question 1</div>
+        <div id="question"></div>
+      </div>
 
-<div id="candidateForm">
+      <div id="options"></div>
 
-<h2>Welcome Candidate</h2>
+      <div class="nav">
+        <button id="prevBtn" class="secondary">← Previous</button>
+        <button id="nextBtn">Next →</button>
+        <button id="submitBtn" class="danger">Submit Exam</button>
+      </div>
+    </div>
 
-<p style="color:red; font-weight:bold;">
-This is a Computer Based Test (CBT) simulation platform powered by the ICT Division, FIIRO.
-It is designed solely for practice and staff training.
-</p>
+    <!-- RESULT -->
+    <div id="result" class="hidden">
+      <div class="result-card">
+        <div id="resultBadge" class="result-badge">—</div>
 
-<p>
-You are about to take an exam. This exam comprises of 2 sections —
-<b>Section A: Current Affairs</b> and
-<b>Section B: Public Service Rules (PSR)</b> in Nigeria.
+        <div class="score-ring-wrap">
+          <svg viewBox="0 0 150 150">
+            <circle class="score-ring-bg" cx="75" cy="75" r="65"/>
+            <circle class="score-ring-fill" id="scoreRing" cx="75" cy="75" r="65"/>
+          </svg>
+          <div class="score-center-text">
+            <div class="score-percent" id="scorePercent">0%</div>
+            <div class="score-label">Score</div>
+          </div>
+        </div>
 
-You have <b>1 hour</b> to complete the entire exam.
-Please attempt <b>ALL</b> questions.
-</p>
+        <p id="scoreText"></p>
 
+        <div class="section-breakdown">
+          <div class="breakdown-item">
+            <div class="breakdown-label">📖 Section A</div>
+            <div class="breakdown-score" id="sectionAScore">—</div>
+            <div class="breakdown-sub" id="sectionASub">Current Affairs</div>
+            <div class="breakdown-bar">
+              <div class="breakdown-bar-fill" id="sectionABar" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="breakdown-item">
+            <div class="breakdown-label">📜 Section B</div>
+            <div class="breakdown-score" id="sectionBScore">—</div>
+            <div class="breakdown-sub" id="sectionBSub">Public Service Rules</div>
+            <div class="breakdown-bar">
+              <div class="breakdown-bar-fill" id="sectionBBar" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
 
-<label style="display:block; margin:10px 0;">
-<input type="checkbox" id="agreeCheck" />
-Click to agree if you have read the instructions
-</label>
+        <div class="performance-msg" id="performanceMsg"></div>
 
+        <button id="restartBtn">🔄 Try Again</button>
+      </div>
+    </div>
 
-<input id="pinCode" placeholder="Enter PIN Code" />
+  </div>
 
-<button id="startBtn" disabled>START</button>
-
-</div>
-
-
-
-<!-- QUIZ -->
-
-<div id="quiz" class="hidden">
-
-<div class="topbar">
-
-<span id="progress"></span>
-
-<span id="timer"></span>
-
-</div>
-
-
-<div id="question"></div>
-
-<div id="options"></div>
-
-
-<div class="nav">
-
-<button id="prevBtn">Previous</button>
-
-<button id="nextBtn">Next</button>
-
-<button id="submitBtn" class="danger">Submit</button>
-
-</div>
-
-</div>
-
-
-
-<!-- RESULT -->
-
-<div id="result" class="hidden">
-
-<h2>Result</h2>
-
-<p id="scoreText"></p>
-
-<button id="restartBtn">Restart</button>
-
-</div>
-
-
-</div>
-
-
-<!-- MAIN SCRIPT -->
-<script type="module" src="./maiin.js?v=33" defer></script>
-
+  <script type="module" src="./maiin.js?v=33" defer></script>
 </body>
 </html>
