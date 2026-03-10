@@ -233,6 +233,38 @@
 
       <hr class="divider" />
 
+      <!-- CHANGE PASSWORD -->
+      <h2>🔒 Change Admin Password</h2>
+      <p style="font-size:.88rem;color:#8fa696;margin-bottom:14px;line-height:1.5;">
+        Change the admin login password. The new password is stored securely in Firebase
+        and takes effect immediately.
+      </p>
+
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:480px;">
+        <div style="position:relative;">
+          <input type="password" id="currentPw" placeholder="Current Password"
+                 style="padding-right:44px;" />
+          <span onclick="togglePw('currentPw',this)"
+                style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:1rem;color:#8fa696;user-select:none;">👁</span>
+        </div>
+        <div style="position:relative;">
+          <input type="password" id="newPw" placeholder="New Password (min. 6 characters)"
+                 style="padding-right:44px;" />
+          <span onclick="togglePw('newPw',this)"
+                style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:1rem;color:#8fa696;user-select:none;">👁</span>
+        </div>
+        <div style="position:relative;">
+          <input type="password" id="confirmPw" placeholder="Confirm New Password"
+                 style="padding-right:44px;" />
+          <span onclick="togglePw('confirmPw',this)"
+                style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:1rem;color:#8fa696;user-select:none;">👁</span>
+        </div>
+        <button id="changePwBtn" style="margin-top:4px;">🔒 Update Password</button>
+        <p id="pwChangeStatus" class="status"></p>
+      </div>
+
+      <hr class="divider" />
+
       <!-- AUDIT LOG TABLE -->
       <div class="audit-header">
         <h2 style="margin:0;border:none;padding:0">🗂 Integrity / Audit Log</h2>
@@ -272,6 +304,18 @@
     </section>
   </div>
 
-  <script type="module" src="./maiin.js?v=34" defer></script>
+  <script>
+  function togglePw(id, icon) {
+    const input = document.getElementById(id);
+    if (input.type === "password") {
+      input.type = "text";
+      icon.textContent = "🙈";
+    } else {
+      input.type = "password";
+      icon.textContent = "👁";
+    }
+  }
+  </script>
+  <script type="module" src="./maiin.js?v=35" defer></script>
 </body>
 </html>
