@@ -730,3 +730,15 @@ hr.divider {
   .analytics-grid { grid-template-columns: 1fr; }
   .topbar { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
+
+/* ===================== STATUS MESSAGES ===================== */
+.status {
+  font-size: 0.88rem;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  margin: 6px 0;
+  min-height: 20px;
+  display: block;
+}
+.status.success { background: var(--green-light); color: var(--green-dark); font-weight: 600; }
+.status.error   { background: var(--red-light); color: var(--red); font-weight: 600; }
